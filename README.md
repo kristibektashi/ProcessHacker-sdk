@@ -1,5 +1,5 @@
 # ProcessHacker-SDK
- This is version 2.36 the SDK used for creating Process Hacker plugins, taken from SourceForge: 
+ This is version 2.36 of the SDK used for creating Process Hacker plugins, taken from SourceForge: 
  https://sourceforge.net/projects/processhacker/files/processhacker2/.
 
  Original readme.txt shown below: 
