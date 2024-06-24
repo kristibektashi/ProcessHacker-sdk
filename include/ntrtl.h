@@ -1186,6 +1186,40 @@ RtlBarrierForDelete(
 
 // end_private
 
+// Wait on address
+
+// begin_rev
+
+#if (PHNT_VERSION >= PHNT_WIN8)
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlWaitOnAddress(
+    _In_ volatile VOID *Address,
+    _In_ PVOID CompareAddress,
+    _In_ SIZE_T AddressSize,
+    _In_opt_ PLARGE_INTEGER Timeout
+    );
+
+NTSYSAPI
+VOID
+NTAPI
+RtlWakeAddressAll(
+    _In_ PVOID Address
+    );
+
+NTSYSAPI
+VOID
+NTAPI
+RtlWakeAddressSingle(
+    _In_ PVOID Address
+    );
+
+#endif
+
+// end_rev
+
 // Strings
 
 #ifndef PHNT_NO_INLINE_INIT_STRING
@@ -2693,6 +2727,38 @@ RtlWow64SetThreadContext(
     );
 #endif
 
+// Vectored exception handlers
+
+NTSYSAPI
+PVOID
+NTAPI
+RtlAddVectoredExceptionHandler(
+    _In_ ULONG First,
+    _In_ PVECTORED_EXCEPTION_HANDLER Handler
+    );
+
+NTSYSAPI
+ULONG
+NTAPI
+RtlRemoveVectoredExceptionHandler(
+    _In_ PVOID Handle
+    );
+
+NTSYSAPI
+PVOID
+NTAPI
+RtlAddVectoredContinueHandler(
+    _In_ ULONG First,
+    _In_ PVECTORED_EXCEPTION_HANDLER Handler
+    );
+
+NTSYSAPI
+ULONG
+NTAPI
+RtlRemoveVectoredContinueHandler(
+    _In_ PVOID Handle
+    );
+
 // Runtime exception handling
 
 #ifdef _WIN64
@@ -3271,7 +3337,7 @@ NTSYSAPI
 PVOID
 NTAPI
 RtlDestroyHeap(
-    _In_ _Post_invalid_ PVOID HeapHandle
+    _Frees_ptr_ PVOID HeapHandle
     );
 
 NTSYSAPI
@@ -3289,7 +3355,7 @@ NTAPI
 RtlFreeHeap(
     _In_ PVOID HeapHandle,
     _In_opt_ ULONG Flags,
-    _In_ _Post_invalid_ PVOID BaseAddress
+    _Frees_ptr_opt_ PVOID BaseAddress
     );
 
 NTSYSAPI
@@ -3339,7 +3405,7 @@ NTAPI
 RtlReAllocateHeap(
     _In_ PVOID HeapHandle,
     _In_ ULONG Flags,
-    _In_ PVOID BaseAddress,
+    _Frees_ptr_opt_ PVOID BaseAddress,
     _In_ SIZE_T Size
     );
 
@@ -4454,7 +4520,7 @@ RtlInitializeBitMap(
     _In_ ULONG SizeOfBitMap
     );
 
-#if (PHNT_MODE == PHNT_MODE_KERNEL)
+#if (PHNT_MODE == PHNT_MODE_KERNEL || PHNT_VERSION >= PHNT_WIN8)
 NTSYSAPI
 VOID
 NTAPI
@@ -4464,7 +4530,7 @@ RtlClearBit(
     );
 #endif
 
-#if (PHNT_MODE == PHNT_MODE_KERNEL)
+#if (PHNT_MODE == PHNT_MODE_KERNEL || PHNT_VERSION >= PHNT_WIN8)
 NTSYSAPI
 VOID
 NTAPI
@@ -5828,21 +5894,6 @@ RtlGetNtVersionNumbers(
     _Out_opt_ PULONG pNtBuildNumber
     );
 
-typedef enum _OS_DEPLOYEMENT_STATE_VALUES
-{
-    OS_DEPLOYMENT_STANDARD = 1,
-    OS_DEPLOYMENT_COMPACT
-} OS_DEPLOYEMENT_STATE_VALUES;
-
-#if (PHNT_VERSION >= PHNT_THRESHOLD)
-NTSYSAPI
-OS_DEPLOYEMENT_STATE_VALUES
-NTAPI
-RtlOsDeploymentState(
-    _In_ ULONG Flags
-    );
-#endif
-
 // Thread pool (old)
 
 NTSYSAPI
@@ -6187,6 +6238,44 @@ RtlReadThreadProfilingData(
 
 #endif
 
+// WOW64
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlGetNativeSystemInformation(
+    _In_ ULONG SystemInformationClass,
+    _In_ PVOID NativeSystemInformation,
+    _In_ ULONG InformationLength,
+    _Out_opt_ PULONG ReturnLength
+    );
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlQueueApcWow64Thread(
+    _In_ HANDLE ThreadHandle,
+    _In_ PPS_APC_ROUTINE ApcRoutine,
+    _In_ PVOID ApcArgument1,
+    _In_ PVOID ApcArgument2,
+    _In_ PVOID ApcArgument3
+    );
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlWow64EnableFsRedirection(
+    _In_ BOOLEAN Wow64FsEnableRedirection
+    );
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlWow64EnableFsRedirectionEx(
+    _In_ PVOID Wow64FsEnableRedirection,
+    _Out_ PVOID *OldFsRedirectionLevel
+    );
+
 // Misc.
 
 NTSYSAPI
@@ -6238,6 +6327,38 @@ BOOLEAN
 NTAPI
 RtlIsThreadWithinLoaderCallout(
     VOID
+    );
+
+NTSYSAPI
+VOID
+NTAPI
+RtlPushFrame(
+    _In_ PTEB_ACTIVE_FRAME Frame
+    );
+
+NTSYSAPI
+VOID
+NTAPI
+RtlPopFrame(
+    _In_ PTEB_ACTIVE_FRAME Frame
+    );
+
+NTSYSAPI
+PTEB_ACTIVE_FRAME
+NTAPI
+RtlGetFrame(
+    VOID
+    );
+
+typedef ULONG (NTAPI *PRTLP_UNHANDLED_EXCEPTION_FILTER)(
+    struct _EXCEPTION_POINTERS *ExceptionInfo
+    );
+
+NTSYSAPI
+VOID
+NTAPI
+RtlSetUnhandledExceptionFilter(
+    _In_ PRTLP_UNHANDLED_EXCEPTION_FILTER UnhandledExceptionFilter
     );
 
 // begin_private

@@ -168,6 +168,16 @@ ZwAddAtom(
 NTSYSCALLAPI
 NTSTATUS
 NTAPI
+ZwAddAtomEx(
+    _In_reads_bytes_opt_(Length) PWSTR AtomName,
+    _In_ ULONG Length,
+    _Out_opt_ PRTL_ATOM Atom,
+    _In_ ULONG Flags
+    );
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
 ZwAddBootEntry(
     _In_ PBOOT_ENTRY BootEntry,
     _Out_opt_ PULONG Id
@@ -240,6 +250,13 @@ NTSTATUS
 NTAPI
 ZwAlertThread(
     _In_ HANDLE ThreadHandle
+    );
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+ZwAlertThreadByThreadId(
+    _In_ HANDLE ThreadId
     );
 
 NTSYSCALLAPI
@@ -557,14 +574,6 @@ ZwAssignProcessToJobObject(
 NTSYSCALLAPI
 NTSTATUS
 NTAPI
-ZwAssignProcessToSiloObject(
-    _In_ HANDLE SiloHandle,
-    _In_ HANDLE ProcessHandle
-    );
-
-NTSYSCALLAPI
-NTSTATUS
-NTAPI
 ZwAssociateWaitCompletionPacket(
     _In_ HANDLE WaitCompletionPacketHandle,
     _In_ HANDLE IoCompletionHandle,
@@ -574,24 +583,6 @@ ZwAssociateWaitCompletionPacket(
     _In_ NTSTATUS IoStatus,
     _In_ ULONG_PTR IoStatusInformation,
     _Out_opt_ PBOOLEAN AlreadySignaled
-    );
-
-NTSYSCALLAPI
-NTSTATUS
-NTAPI
-ZwAttachThreadIdSiloToCurrentThread(
-    _In_  HANDLE ThreadId,
-    _Out_ PHANDLE PreviousSiloHandle,
-    _Out_opt_ PBOOLEAN bChangedSilo
-    );
-
-NTSYSCALLAPI
-NTSTATUS
-NTAPI
-ZwAttachThreadSiloToCurrentThread(
-    _In_ HANDLE ThreadHandle,
-    _Out_ PHANDLE PreviousSiloHandle,
-    _Out_opt_ PBOOLEAN bChangedSilo
     );
 
 NTSYSCALLAPI
@@ -1115,15 +1106,6 @@ ZwCreateSemaphore(
 NTSYSCALLAPI
 NTSTATUS
 NTAPI
-ZwCreateSiloObject(
-    _Out_ PHANDLE SiloHandle,
-    _In_ ACCESS_MASK DesiredAccess,
-    _In_opt_ POBJECT_ATTRIBUTES ObjectAttributes
-    );
-
-NTSYSCALLAPI
-NTSTATUS
-NTAPI
 ZwCreateSymbolicLinkObject(
     _Out_ PHANDLE LinkHandle,
     _In_ ACCESS_MASK DesiredAccess,
@@ -1408,7 +1390,7 @@ NTSTATUS
 NTAPI
 ZwDeleteWnfStateData(
     _In_ PCWNF_STATE_NAME StateName,
-    _In_opt_ const PVOID ExplicitScope
+    _In_opt_ const VOID *ExplicitScope
     );
 
 NTSYSCALLAPI
@@ -1416,13 +1398,6 @@ NTSTATUS
 NTAPI
 ZwDeleteWnfStateName(
     _In_ PCWNF_STATE_NAME StateName
-    );
-
-NTSYSCALLAPI
-NTSTATUS
-NTAPI
-ZwDetachSiloFromCurrentThread(
-    _In_ HANDLE SiloHandle
     );
 
 NTSYSCALLAPI
@@ -2098,7 +2073,7 @@ ZwNotifyChangeDirectoryFile(
     _In_opt_ PIO_APC_ROUTINE ApcRoutine,
     _In_opt_ PVOID ApcContext,
     _Out_ PIO_STATUS_BLOCK IoStatusBlock,
-    _Out_writes_bytes_(Length) PVOID Buffer,
+    _Out_writes_bytes_(Length) PVOID Buffer, // FILE_NOTIFY_INFORMATION
     _In_ ULONG Length,
     _In_ ULONG CompletionFilter,
     _In_ BOOLEAN WatchTree
@@ -2218,15 +2193,6 @@ ZwOpenJobObject(
     _Out_ PHANDLE JobHandle,
     _In_ ACCESS_MASK DesiredAccess,
     _In_ POBJECT_ATTRIBUTES ObjectAttributes
-    );
-
-NTSYSCALLAPI
-NTSTATUS
-NTAPI
-ZwOpenJobObjectToken(
-    _In_ HANDLE JobHandle,
-    _In_ ACCESS_MASK DesiredAccess,
-    _Out_ PHANDLE TokenHandle
     );
 
 NTSYSCALLAPI
@@ -2389,16 +2355,6 @@ ZwOpenSession(
     _Out_ PHANDLE SessionHandle,
     _In_ ACCESS_MASK DesiredAccess,
     _In_ POBJECT_ATTRIBUTES ObjectAttributes
-    );
-
-NTSYSCALLAPI
-NTSTATUS
-NTAPI
-ZwOpenSiloObject(
-    _Out_ PHANDLE SiloHandle,
-    _In_ ACCESS_MASK DesiredAccess,
-    _In_ POBJECT_ATTRIBUTES ObjectAttributes,
-    _In_opt_ HANDLE SiloId
     );
 
 NTSYSCALLAPI
@@ -2794,17 +2750,6 @@ ZwQueryInformationResourceManager(
 NTSYSCALLAPI
 NTSTATUS
 NTAPI
-ZwQueryInformationSiloObject(
-    _In_opt_ HANDLE SiloHandle,
-    _In_ SILOOBJECTINFOCLASS SiloObjectInformationClass,
-    _Out_writes_bytes_(SiloObjectInformationLength) PVOID SiloObjectInformation,
-    _In_ ULONG SiloObjectInformationLength,
-    _Out_opt_ PULONG ReturnLength
-    );
-
-NTSYSCALLAPI
-NTSTATUS
-NTAPI
 ZwQueryInformationThread(
     _In_ HANDLE ThreadHandle,
     _In_ THREADINFOCLASS ThreadInformationClass,
@@ -3152,7 +3097,7 @@ NTAPI
 ZwQueryWnfStateData(
     _In_ PCWNF_STATE_NAME StateName,
     _In_opt_ PCWNF_TYPE_ID TypeId,
-    _In_opt_ const VOID* ExplicitScope,
+    _In_opt_ const VOID *ExplicitScope,
     _Out_ PWNF_CHANGE_STAMP ChangeStamp,
     _Out_writes_bytes_to_opt_(*BufferSize, *BufferSize) PVOID Buffer,
     _Inout_ PULONG BufferSize
@@ -3164,7 +3109,7 @@ NTAPI
 ZwQueryWnfStateNameInformation(
     _In_ PCWNF_STATE_NAME StateName,
     _In_ WNF_STATE_NAME_INFORMATION NameInfoClass,
-    _In_opt_ const PVOID ExplicitScope,
+    _In_opt_ const VOID *ExplicitScope,
     _Out_writes_bytes_(InfoBufferSize) PVOID InfoBuffer,
     _In_ ULONG InfoBufferSize
     );
@@ -3815,16 +3760,6 @@ ZwSetInformationResourceManager(
 NTSYSCALLAPI
 NTSTATUS
 NTAPI
-ZwSetInformationSiloObject(
-    _In_opt_ HANDLE SiloHandle,
-    _In_ SILOOBJECTINFOCLASS SiloObjectInformationClass,
-    _In_reads_bytes_(SiloObjectInformationLength) PVOID SiloObjectInformation,
-    _In_ ULONG SiloObjectInformationLength
-    );
-
-NTSYSCALLAPI
-NTSTATUS
-NTAPI
 ZwSetInformationThread(
     _In_ HANDLE ThreadHandle,
     _In_ THREADINFOCLASS ThreadInformationClass,
@@ -4195,14 +4130,6 @@ ZwTerminateProcess(
 NTSYSCALLAPI
 NTSTATUS
 NTAPI
-ZwTerminateSiloObject(
-    _In_ HANDLE SiloHandle,
-    _In_ NTSTATUS ExitStatus
-    );
-
-NTSYSCALLAPI
-NTSTATUS
-NTAPI
 ZwTerminateThread(
     _In_opt_ HANDLE ThreadHandle,
     _In_ NTSTATUS ExitStatus
@@ -4348,10 +4275,10 @@ NTSTATUS
 NTAPI
 ZwUpdateWnfStateData(
     _In_ PCWNF_STATE_NAME StateName,
-    _In_reads_bytes_opt_(Length) const VOID* Buffer,
+    _In_reads_bytes_opt_(Length) const VOID *Buffer,
     _In_opt_ ULONG Length,
     _In_opt_ PCWNF_TYPE_ID TypeId,
-    _In_opt_ const PVOID ExplicitScope,
+    _In_opt_ const VOID *ExplicitScope,
     _In_ WNF_CHANGE_STAMP MatchingChangeStamp,
     _In_ LOGICAL CheckStamp
     );
@@ -4362,6 +4289,14 @@ NTAPI
 ZwVdmControl(
     _In_ VDMSERVICECLASS Service,
     _Inout_ PVOID ServiceData
+    );
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+ZwWaitForAlertByThreadId(
+    _In_ PVOID Address,
+    _In_opt_ PLARGE_INTEGER Timeout
     );
 
 NTSYSCALLAPI
