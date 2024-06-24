@@ -230,17 +230,6 @@ NtOpenThreadTokenEx(
     _Out_ PHANDLE TokenHandle
     );
 
-#if (PHNT_VERSION >= PHNT_WIN8)
-NTSYSCALLAPI
-NTSTATUS
-NTAPI
-NtOpenJobObjectToken(
-    _In_ HANDLE JobHandle,
-    _In_ ACCESS_MASK DesiredAccess,
-    _Out_ PHANDLE TokenHandle
-    );
-#endif
-
 NTSYSCALLAPI
 NTSTATUS
 NTAPI
@@ -447,9 +436,6 @@ NtAccessCheckByTypeResultList(
     );
 
 // Signing
-
-// rev
-typedef ULONG SE_SIGNING_LEVEL, *PSE_SIGNING_LEVEL; // ?
 
 #if (PHNT_VERSION >= PHNT_THRESHOLD)
 

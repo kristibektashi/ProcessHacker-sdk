@@ -17,7 +17,6 @@
 #define PHAPP_IDR_MODULE                      112
 #define PHAPP_IDC_CPU                         112
 #define PHAPP_IDC_PRIVATEBYTES                113
-#define PHAPP_IDD_TERMINATOR                  114
 #define PHAPP_IDC_IO                          114
 #define PHAPP_IDB_CROSS                       117
 #define PHAPP_IDB_TICK                        118
@@ -68,9 +67,6 @@
 #define PHAPP_IDD_SESSION                     153
 #define PHAPP_IDD_PROCMEMORY                  154
 #define PHAPP_IDD_CHOOSE                      155
-#define PHAPP_IDB_PENCIL                      157
-#define PHAPP_IDB_FOLDER                      158
-#define PHAPP_IDB_MAGNIFIER                   159
 #define PHAPP_IDD_OPTGENERAL                  162
 #define PHAPP_IDD_OPTHIGHLIGHTING             163
 #define PHAPP_IDR_NETWORK                     164
@@ -115,11 +111,16 @@
 #define PHAPP_IDD_CONTAINER                   205
 #define PHAPP_IDD_SYSINFO_MEMPANELXP          206
 #define PHAPP_IDD_MINIINFO                    207
-#define PHAPP_IDB_PIN                         208
-#define PHAPP_IDB_COG                         209
 #define PHAPP_IDD_MINIINFO_LIST               210
 #define PHAPP_IDR_MINIINFO                    211
 #define PHAPP_IDR_MINIINFO_PROCESS            212
+#define PHAPP_IDR_ENVIRONMENT                 214
+#define PHAPP_IDD_MITIGATION                  215
+#define PHAPP_IDI_PIN                         216
+#define PHAPP_IDI_FOLDER                      217
+#define PHAPP_IDI_PENCIL                      218
+#define PHAPP_IDI_MAGNIFIER                   219
+#define PHAPP_IDD_EDITENV                     221
 #define PHAPP_IDC_TERMINATE                   1003
 #define PHAPP_IDC_FILEICON                    1005
 #define PHAPP_IDC_FILE                        1006
@@ -132,19 +133,16 @@
 #define PHAPP_IDC_CMDLINE                     1021
 #define PHAPP_IDC_URL                         1021
 #define PHAPP_IDC_RUNSELECTED                 1021
-#define PHAPP_IDC_TERMINATOR_LIST             1022
 #define PHAPP_IDC_CURDIR                      1022
-#define PHAPP_IDC_TERMINATOR_TEXT             1023
 #define PHAPP_IDC_STARTED                     1023
 #define PHAPP_IDC_ABOUT_NAME                  1024
 #define PHAPP_IDC_PEBADDRESS                  1024
 #define PHAPP_IDC_TERMINATED                  1024
 #define PHAPP_IDC_PARENTPROCESS               1025
-#define PHAPP_IDC_DEP                         1026
+#define PHAPP_IDC_MITIGATION                  1026
 #define PHAPP_IDC_PAUSE                       1027
 #define PHAPP_IDC_PROTECTION                  1027
 #define PHAPP_IDC_START                       1028
-#define PHAPP_IDC_ASLR                        1028
 #define PHAPP_IDC_DESCRIPTION                 1029
 #define PHAPP_IDC_TYPE                        1032
 #define PHAPP_IDC_STARTTYPE                   1033
@@ -204,7 +202,6 @@
 #define PHAPP_IDC_PROGRESS                    1076
 #define PHAPP_IDC_PROGRESSTEXT                1077
 #define PHAPP_IDC_LINKEDTOKEN                 1079
-#define PHAPP_IDC_EDITPROTECTION              1079
 #define PHAPP_IDC_DISABLEALL                  1079
 #define PHAPP_IDC_MOVEUP                      1079
 #define PHAPP_IDC_CHANGE                      1079
@@ -216,7 +213,7 @@
 #define PHAPP_IDC_FONT                        1079
 #define PHAPP_IDC_INTEGRITY                   1079
 #define PHAPP_IDC_MORE                        1079
-#define PHAPP_IDC_EDITDEP                     1080
+#define PHAPP_IDC_VIEWMITIGATION              1080
 #define PHAPP_IDC_VIEWPARENTPROCESS           1081
 #define PHAPP_IDC_OPENFILENAME                1082
 #define PHAPP_IDC_LIMITS                      1083
@@ -407,7 +404,6 @@
 #define PHAPP_IDC_STRINGS                     1242
 #define PHAPP_IDC_SHOWTEXT                    1245
 #define PHAPP_IDC_ICONPROCESSES               1248
-#define PHAPP_IDC_ENABLE                      1251
 #define PHAPP_IDC_CLEANUP                     1251
 #define PHAPP_IDC_ENABLESTAGE2                1253
 #define PHAPP_IDC_TOGGLEELEVATION             1254
@@ -473,6 +469,7 @@
 #define PHAPP_IDC_ZNONPAGEDLIMIT_V            1328
 #define PHAPP_IDC_ZNONPAGEDALLOCSDELTA_V      1329
 #define PHAPP_IDC_ZNONPAGEDFREESDELTA_V       1330
+#define PHAPP_IDC_ZPHYSICALRESERVED_V         1331
 #define PHAPP_IDC_ZLISTZEROED_V               1332
 #define PHAPP_IDC_ZLISTFREE_V                 1333
 #define PHAPP_IDC_ZLISTMODIFIED_V             1334
@@ -508,7 +505,6 @@
 #define PHAPP_IDC_EMPTY                       1360
 #define PHAPP_IDC_SAMPLECOUNTAUTOMATIC        1361
 #define PHAPP_IDC_SHOWCOMMITINSUMMARY         1361
-#define PHAPP_IDC_ASLRLABEL                   1363
 #define PHAPP_IDC_ZLISTSTANDBY4_V             1364
 #define PHAPP_IDC_ZLISTSTANDBY5_V             1365
 #define PHAPP_IDC_SELECTALL                   1365
@@ -525,6 +521,13 @@
 #define PHAPP_IDC_ZPAGINGMAPPEDWRITESDELTA_V  1371
 #define PHAPP_IDC_ZLISTMODIFIEDPAGEFILE_V     1373
 #define PHAPP_IDC_SECTION                     1375
+#define PHAPP_IDC_REGEX                       1377
+#define PHAPP_IDC_DESCRIPTIONLABEL            1378
+#define PHAPP_IDC_STARTATLOGON                1380
+#define PHAPP_IDC_VIEWCOMMANDLINE             1381
+#define PHAPP_IDC_DELETE                      1382
+#define PHAPP_IDC_EDIT                        1383
+#define PHAPP_IDC_NEW                         1384
 #define PHAPP_ID_MAINWND_PROCESSTL            2001
 #define PHAPP_ID_MAINWND_SERVICETL            2002
 #define PHAPP_ID_MAINWND_NETWORKTL            2003
@@ -538,7 +541,6 @@
 #define PHAPP_ID_THREAD_TERMINATE             40011
 #define PHAPP_ID_THREAD_SUSPEND               40012
 #define PHAPP_ID_THREAD_RESUME                40013
-#define PHAPP_ID_THREAD_FORCETERMINATE        40014
 #define PHAPP_ID_THREAD_PERMISSIONS           40015
 #define PHAPP_ID_THREAD_TOKEN                 40016
 #define PHAPP_ID_ANALYZE_WAIT                 40018
@@ -549,10 +551,10 @@
 #define PHAPP_ID_PRIORITY_BELOWNORMAL         40024
 #define PHAPP_ID_PRIORITY_LOWEST              40025
 #define PHAPP_ID_PRIORITY_IDLE                40026
-#define PHAPP_ID_I_0                          40028
-#define PHAPP_ID_I_1                          40029
-#define PHAPP_ID_I_2                          40030
-#define PHAPP_ID_I_3                          40031
+#define PHAPP_ID_IOPRIORITY_VERYLOW           40028
+#define PHAPP_ID_IOPRIORITY_LOW               40029
+#define PHAPP_ID_IOPRIORITY_NORMAL            40030
+#define PHAPP_ID_IOPRIORITY_HIGH              40031
 #define PHAPP_ID_PROCESS_RESTART              40032
 #define PHAPP_ID_PROCESS_VIRTUALIZATION       40034
 #define PHAPP_ID_PROCESS_AFFINITY             40035
@@ -688,11 +690,11 @@
 #define PHAPP_ID_VIEW_UPDATEAUTOMATICALLY     40235
 #define PHAPP_ID_HACKER_RUNASLIMITEDUSER      40236
 #define PHAPP_ID_USER_REMOTECONTROL           40237
-#define PHAPP_ID_PAGEPRIORITY_5               40239
-#define PHAPP_ID_PAGEPRIORITY_4               40240
-#define PHAPP_ID_PAGEPRIORITY_3               40241
-#define PHAPP_ID_PAGEPRIORITY_2               40242
-#define PHAPP_ID_PAGEPRIORITY_1               40243
+#define PHAPP_ID_PAGEPRIORITY_NORMAL          40239
+#define PHAPP_ID_PAGEPRIORITY_BELOWNORMAL     40240
+#define PHAPP_ID_PAGEPRIORITY_MEDIUM          40241
+#define PHAPP_ID_PAGEPRIORITY_LOW             40242
+#define PHAPP_ID_PAGEPRIORITY_VERYLOW         40243
 #define PHAPP_ID_VIEW_SHOWCPUBELOW001         40246
 #define PHAPP_ID_MODULE_OPENFILELOCATION      40247
 #define PHAPP_ID_PROCESS_OPENFILELOCATION     40248
@@ -717,7 +719,6 @@
 #define PHAPP_ID_TOOLS_STARTTASKMANAGER       40277
 #define PHAPP_ID_COMPUTER_SHUTDOWNHYBRID      40278
 #define PHAPP_ID_COMPUTER_RESTARTBOOTOPTIONS  40280
-#define PHAPP_ID_MISCELLANEOUS_TERMINATOR     40281
 #define PHAPP_ID_HANDLE_OBJECTPROPERTIES1     40282
 #define PHAPP_ID_HANDLE_OBJECTPROPERTIES2     40283
 #define PHAPP_ID_OBJECT_GOTOOWNINGPROCESS     40284
@@ -726,6 +727,9 @@
 #define PHAPP_ID_PROCESS_GOTOPROCESS          40287
 #define PHAPP_ID_MINIINFO_REFRESH             40288
 #define PHAPP_ID_MINIINFO_REFRESHAUTOMATICALLY 40289
+#define PHAPP_ID_ENVIRONMENT_EDIT             40290
+#define PHAPP_ID_ENVIRONMENT_COPY             40291
+#define PHAPP_ID_ENVIRONMENT_DELETE           40292
 #define PHAPP_IDDYNAMIC                       50000
 #define PHAPP_IDPLUGINS                       55000
 
@@ -733,9 +737,9 @@
 // 
 #if 0
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        213
-#define _APS_NEXT_COMMAND_VALUE         40290
-#define _APS_NEXT_CONTROL_VALUE         1377
+#define _APS_NEXT_RESOURCE_VALUE        223
+#define _APS_NEXT_COMMAND_VALUE         40293
+#define _APS_NEXT_CONTROL_VALUE         1385
 #define _APS_NEXT_SYMED_VALUE           169
 #endif
 #endif
