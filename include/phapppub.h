@@ -8,916 +8,33 @@ extern "C" {
 #endif
 
 //
-// providers
+// phfwddef
 //
 
-PHAPPAPI extern PH_CALLBACK PhProcessAddedEvent; // phapppub
-PHAPPAPI extern PH_CALLBACK PhProcessModifiedEvent; // phapppub
-PHAPPAPI extern PH_CALLBACK PhProcessRemovedEvent; // phapppub
-PHAPPAPI extern PH_CALLBACK PhProcessesUpdatedEvent; // phapppub
+// Providers
 
-#define DPCS_PROCESS_ID ((HANDLE)(LONG_PTR)-2)
-#define INTERRUPTS_PROCESS_ID ((HANDLE)(LONG_PTR)-3)
-
-// DPCs, Interrupts and System Idle Process are not real.
-// Non-"real" processes can never be opened.
-#define PH_IS_REAL_PROCESS_ID(ProcessId) ((LONG_PTR)(ProcessId) > 0)
-
-// DPCs and Interrupts are fake, but System Idle Process is not.
-#define PH_IS_FAKE_PROCESS_ID(ProcessId) ((LONG_PTR)(ProcessId) < 0)
-
-// The process item has been removed.
-#define PH_PROCESS_ITEM_REMOVED 0x1
-
-typedef enum _VERIFY_RESULT VERIFY_RESULT;
+typedef struct _PH_PROCESS_ITEM *PPH_PROCESS_ITEM;
 typedef struct _PH_PROCESS_RECORD *PPH_PROCESS_RECORD;
+typedef struct _PH_SERVICE_ITEM *PPH_SERVICE_ITEM;
+typedef struct _PH_NETWORK_ITEM *PPH_NETWORK_ITEM;
+typedef struct _PH_MODULE_ITEM *PPH_MODULE_ITEM;
+typedef struct _PH_MODULE_PROVIDER *PPH_MODULE_PROVIDER;
+typedef struct _PH_THREAD_ITEM *PPH_THREAD_ITEM;
+typedef struct _PH_THREAD_PROVIDER *PPH_THREAD_PROVIDER;
+typedef struct _PH_HANDLE_ITEM *PPH_HANDLE_ITEM;
+typedef struct _PH_HANDLE_PROVIDER *PPH_HANDLE_PROVIDER;
+typedef struct _PH_MEMORY_ITEM *PPH_MEMORY_ITEM;
+typedef struct _PH_MEMORY_ITEM_LIST *PPH_MEMORY_ITEM_LIST;
 
-typedef struct _PH_PROCESS_ITEM
-{
-    PH_HASH_ENTRY HashEntry;
-    ULONG State;
-    PPH_PROCESS_RECORD Record;
-
-    // Basic
-
-    HANDLE ProcessId;
-    HANDLE ParentProcessId;
-    PPH_STRING ProcessName;
-    ULONG SessionId;
-
-    LARGE_INTEGER CreateTime;
-
-    // Handles
-
-    HANDLE QueryHandle;
-
-    // Parameters
-
-    PPH_STRING FileName;
-    PPH_STRING CommandLine;
-
-    // File
-
-    HICON SmallIcon;
-    HICON LargeIcon;
-    PH_IMAGE_VERSION_INFO VersionInfo;
-
-    // Security
-
-    PPH_STRING UserName;
-    TOKEN_ELEVATION_TYPE ElevationType;
-    MANDATORY_LEVEL IntegrityLevel;
-    PWSTR IntegrityString;
-
-    // Other
-
-    PPH_STRING JobName;
-    HANDLE ConsoleHostProcessId;
-
-    // Signature, Packed
-
-    VERIFY_RESULT VerifyResult;
-    PPH_STRING VerifySignerName;
-    ULONG ImportFunctions;
-    ULONG ImportModules;
-
-    // Flags
-
-    union
-    {
-        ULONG Flags;
-        struct
-        {
-            ULONG UpdateIsDotNet : 1;
-            ULONG IsBeingDebugged : 1;
-            ULONG IsDotNet : 1;
-            ULONG IsElevated : 1;
-            ULONG IsInJob : 1;
-            ULONG IsInSignificantJob : 1;
-            ULONG IsPacked : 1;
-            ULONG IsPosix : 1;
-            ULONG IsSuspended : 1;
-            ULONG IsWow64 : 1;
-            ULONG IsImmersive : 1;
-            ULONG IsWow64Valid : 1;
-            ULONG IsPartiallySuspended : 1;
-            ULONG AddedEventSent : 1;
-            ULONG Spare : 18;
-        };
-    };
-
-    // Misc.
-
-    ULONG JustProcessed;
-    PH_EVENT Stage1Event;
-
-    PPH_POINTER_LIST ServiceList;
-    PH_QUEUED_LOCK ServiceListLock;
-
-    WCHAR ProcessIdString[PH_INT32_STR_LEN_1];
-    WCHAR ParentProcessIdString[PH_INT32_STR_LEN_1];
-    WCHAR SessionIdString[PH_INT32_STR_LEN_1];
-
-    // Dynamic
-
-    KPRIORITY BasePriority;
-    ULONG PriorityClass;
-    LARGE_INTEGER KernelTime;
-    LARGE_INTEGER UserTime;
-    ULONG NumberOfHandles;
-    ULONG NumberOfThreads;
-
-    FLOAT CpuUsage; // Below Windows 7, sum of kernel and user CPU usage; above Windows 7, cycle-based CPU usage.
-    FLOAT CpuKernelUsage;
-    FLOAT CpuUserUsage;
-
-    PH_UINT64_DELTA CpuKernelDelta;
-    PH_UINT64_DELTA CpuUserDelta;
-    PH_UINT64_DELTA IoReadDelta;
-    PH_UINT64_DELTA IoWriteDelta;
-    PH_UINT64_DELTA IoOtherDelta;
-    PH_UINT64_DELTA IoReadCountDelta;
-    PH_UINT64_DELTA IoWriteCountDelta;
-    PH_UINT64_DELTA IoOtherCountDelta;
-    PH_UINT32_DELTA ContextSwitchesDelta;
-    PH_UINT32_DELTA PageFaultsDelta;
-    PH_UINT64_DELTA CycleTimeDelta; // since WIN7
-
-    VM_COUNTERS_EX VmCounters;
-    IO_COUNTERS IoCounters;
-    SIZE_T WorkingSetPrivateSize; // since VISTA
-    ULONG PeakNumberOfThreads; // since WIN7
-    ULONG HardFaultCount; // since WIN7
-
-    ULONG SequenceNumber;
-    PH_CIRCULAR_BUFFER_FLOAT CpuKernelHistory;
-    PH_CIRCULAR_BUFFER_FLOAT CpuUserHistory;
-    PH_CIRCULAR_BUFFER_ULONG64 IoReadHistory;
-    PH_CIRCULAR_BUFFER_ULONG64 IoWriteHistory;
-    PH_CIRCULAR_BUFFER_ULONG64 IoOtherHistory;
-    PH_CIRCULAR_BUFFER_SIZE_T PrivateBytesHistory;
-    //PH_CIRCULAR_BUFFER_SIZE_T WorkingSetHistory;
-
-    // New fields
-    PH_UINTPTR_DELTA PrivateBytesDelta;
-    PPH_STRING PackageFullName;
-} PH_PROCESS_ITEM, *PPH_PROCESS_ITEM;
-
-// The process itself is dead.
-#define PH_PROCESS_RECORD_DEAD 0x1
-// An extra reference has been added to the process record for the statistics system.
-#define PH_PROCESS_RECORD_STAT_REF 0x2
-
-typedef struct _PH_PROCESS_RECORD
-{
-    LIST_ENTRY ListEntry;
-    LONG RefCount;
-    ULONG Flags;
-
-    HANDLE ProcessId;
-    HANDLE ParentProcessId;
-    ULONG SessionId;
-    LARGE_INTEGER CreateTime;
-    LARGE_INTEGER ExitTime;
-
-    PPH_STRING ProcessName;
-    PPH_STRING FileName;
-    PPH_STRING CommandLine;
-    /*PPH_STRING UserName;*/
-} PH_PROCESS_RECORD, *PPH_PROCESS_RECORD;
-
-PHAPPAPI
-PPH_STRING
-NTAPI
-PhGetClientIdName(
-    _In_ PCLIENT_ID ClientId
-    );
-
-PHAPPAPI
-PPH_STRING
-NTAPI
-PhGetClientIdNameEx(
-    _In_ PCLIENT_ID ClientId,
-    _In_opt_ PPH_STRING ProcessName
-    );
-
-PHAPPAPI
-PWSTR
-NTAPI
-PhGetProcessPriorityClassString(
-    _In_ ULONG PriorityClass
-    );
-
-PHAPPAPI
-PPH_PROCESS_ITEM
-NTAPI
-PhReferenceProcessItem(
-    _In_ HANDLE ProcessId
-    );
-
-PHAPPAPI
-VOID
-NTAPI
-PhEnumProcessItems(
-    _Out_opt_ PPH_PROCESS_ITEM **ProcessItems,
-    _Out_ PULONG NumberOfProcessItems
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhGetStatisticsTime(
-    _In_opt_ PPH_PROCESS_ITEM ProcessItem,
-    _In_ ULONG Index,
-    _Out_ PLARGE_INTEGER Time
-    );
-
-PHAPPAPI
-PPH_STRING
-NTAPI
-PhGetStatisticsTimeString(
-    _In_opt_ PPH_PROCESS_ITEM ProcessItem,
-    _In_ ULONG Index
-    );
-
-PHAPPAPI
-VOID
-NTAPI
-PhReferenceProcessRecord(
-    _In_ PPH_PROCESS_RECORD ProcessRecord
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhReferenceProcessRecordSafe(
-    _In_ PPH_PROCESS_RECORD ProcessRecord
-    );
-
-PHAPPAPI
-VOID
-NTAPI
-PhReferenceProcessRecordForStatistics(
-    _In_ PPH_PROCESS_RECORD ProcessRecord
-    );
-
-PHAPPAPI
-VOID
-NTAPI
-PhDereferenceProcessRecord(
-    _In_ PPH_PROCESS_RECORD ProcessRecord
-    );
-
-PHAPPAPI
-PPH_PROCESS_RECORD
-NTAPI
-PhFindProcessRecord(
-    _In_opt_ HANDLE ProcessId,
-    _In_ PLARGE_INTEGER Time
-    );
-
-PHAPPAPI
-PPH_PROCESS_ITEM
-NTAPI
-PhReferenceProcessItemForParent(
-    _In_ HANDLE ParentProcessId,
-    _In_ HANDLE ProcessId,
-    _In_ PLARGE_INTEGER CreateTime
-    );
-
-PHAPPAPI
-PPH_PROCESS_ITEM
-NTAPI
-PhReferenceProcessItemForRecord(
-    _In_ PPH_PROCESS_RECORD Record
-    );
-
-PHAPPAPI extern PH_CALLBACK PhServiceAddedEvent; // phapppub
-PHAPPAPI extern PH_CALLBACK PhServiceModifiedEvent; // phapppub
-PHAPPAPI extern PH_CALLBACK PhServiceRemovedEvent; // phapppub
-PHAPPAPI extern PH_CALLBACK PhServicesUpdatedEvent; // phapppub
-
-typedef struct _PH_SERVICE_ITEM
-{
-    PH_STRINGREF Key; // points to Name
-    PPH_STRING Name;
-    PPH_STRING DisplayName;
-
-    // State
-    ULONG Type;
-    ULONG State;
-    ULONG ControlsAccepted;
-    ULONG Flags; // e.g. SERVICE_RUNS_IN_SYSTEM_PROCESS
-    HANDLE ProcessId;
-
-    // Config
-    ULONG StartType;
-    ULONG ErrorControl;
-
-} PH_SERVICE_ITEM, *PPH_SERVICE_ITEM;
-
-typedef struct _PH_SERVICE_MODIFIED_DATA
-{
-    PPH_SERVICE_ITEM Service;
-    PH_SERVICE_ITEM OldService;
-} PH_SERVICE_MODIFIED_DATA, *PPH_SERVICE_MODIFIED_DATA;
-
-typedef enum _PH_SERVICE_CHANGE
-{
-    ServiceStarted,
-    ServiceContinued,
-    ServicePaused,
-    ServiceStopped
-} PH_SERVICE_CHANGE, *PPH_SERVICE_CHANGE;
-
-PHAPPAPI
-PPH_SERVICE_ITEM
-NTAPI
-PhReferenceServiceItem(
-    _In_ PWSTR Name
-    );
-
-PHAPPAPI
-PH_SERVICE_CHANGE
-NTAPI
-PhGetServiceChange(
-    _In_ PPH_SERVICE_MODIFIED_DATA Data
-    );
-
-PHAPPAPI extern PH_CALLBACK PhNetworkItemAddedEvent; // phapppub
-PHAPPAPI extern PH_CALLBACK PhNetworkItemModifiedEvent; // phapppub
-PHAPPAPI extern PH_CALLBACK PhNetworkItemRemovedEvent; // phapppub
-PHAPPAPI extern PH_CALLBACK PhNetworkItemsUpdatedEvent; // phapppub
-
-#define PH_NETWORK_OWNER_INFO_SIZE 16
-
-typedef struct _PH_NETWORK_ITEM
-{
-    ULONG ProtocolType;
-    PH_IP_ENDPOINT LocalEndpoint;
-    PH_IP_ENDPOINT RemoteEndpoint;
-    ULONG State;
-    HANDLE ProcessId;
-
-    PPH_STRING ProcessName;
-    HICON ProcessIcon;
-    BOOLEAN ProcessIconValid;
-    PPH_STRING OwnerName;
-
-    BOOLEAN JustResolved;
-
-    WCHAR LocalAddressString[65];
-    WCHAR LocalPortString[PH_INT32_STR_LEN_1];
-    WCHAR RemoteAddressString[65];
-    WCHAR RemotePortString[PH_INT32_STR_LEN_1];
-    PPH_STRING LocalHostString;
-    PPH_STRING RemoteHostString;
-
-    LARGE_INTEGER CreateTime;
-    ULONGLONG OwnerInfo[PH_NETWORK_OWNER_INFO_SIZE];
-} PH_NETWORK_ITEM, *PPH_NETWORK_ITEM;
-
-PHAPPAPI
-PPH_NETWORK_ITEM
-NTAPI
-PhReferenceNetworkItem(
-    _In_ ULONG ProtocolType,
-    _In_ PPH_IP_ENDPOINT LocalEndpoint,
-    _In_ PPH_IP_ENDPOINT RemoteEndpoint,
-    _In_ HANDLE ProcessId
-    );
-
-PHAPPAPI
-PWSTR
-NTAPI
-PhGetProtocolTypeName(
-    _In_ ULONG ProtocolType
-    );
-
-PHAPPAPI
-PWSTR
-NTAPI
-PhGetTcpStateName(
-    _In_ ULONG State
-    );
-
-typedef struct _PH_MODULE_ITEM
-{
-    PVOID BaseAddress;
-    ULONG Size;
-    ULONG Flags;
-    ULONG Type;
-    USHORT LoadReason;
-    USHORT LoadCount;
-    PPH_STRING Name;
-    PPH_STRING FileName;
-    PH_IMAGE_VERSION_INFO VersionInfo;
-
-    WCHAR BaseAddressString[PH_PTR_STR_LEN_1];
-
-    BOOLEAN IsFirst;
-    BOOLEAN JustProcessed;
-
-    VERIFY_RESULT VerifyResult;
-    PPH_STRING VerifySignerName;
-
-    ULONG ImageTimeDateStamp;
-    USHORT ImageCharacteristics;
-    USHORT ImageDllCharacteristics;
-
-    LARGE_INTEGER LoadTime;
-} PH_MODULE_ITEM, *PPH_MODULE_ITEM;
-
-typedef struct _PH_MODULE_PROVIDER
-{
-    PPH_HASHTABLE ModuleHashtable;
-    PH_FAST_LOCK ModuleHashtableLock;
-    PH_CALLBACK ModuleAddedEvent;
-    PH_CALLBACK ModuleModifiedEvent;
-    PH_CALLBACK ModuleRemovedEvent;
-    PH_CALLBACK UpdatedEvent;
-
-    HANDLE ProcessId;
-    HANDLE ProcessHandle;
-    PPH_STRING PackageFullName;
-    SLIST_HEADER QueryListHead;
-    NTSTATUS RunStatus;
-} PH_MODULE_PROVIDER, *PPH_MODULE_PROVIDER;
-
-typedef struct _PH_THREAD_ITEM
-{
-    HANDLE ThreadId;
-
-    LARGE_INTEGER CreateTime;
-    LARGE_INTEGER KernelTime;
-    LARGE_INTEGER UserTime;
-
-    FLOAT CpuUsage;
-    PH_UINT64_DELTA CpuKernelDelta;
-    PH_UINT64_DELTA CpuUserDelta;
-
-    PH_UINT32_DELTA ContextSwitchesDelta;
-    PH_UINT64_DELTA CyclesDelta;
-    LONG Priority;
-    LONG BasePriority;
-    ULONG64 StartAddress;
-    PPH_STRING StartAddressString;
-    PPH_STRING StartAddressFileName;
-    enum _PH_SYMBOL_RESOLVE_LEVEL StartAddressResolveLevel;
-    KTHREAD_STATE State;
-    KWAIT_REASON WaitReason;
-    LONG PriorityWin32;
-    PPH_STRING ServiceName;
-
-    HANDLE ThreadHandle;
-
-    BOOLEAN IsGuiThread;
-    BOOLEAN JustResolved;
-
-    WCHAR ThreadIdString[PH_INT32_STR_LEN_1];
-} PH_THREAD_ITEM, *PPH_THREAD_ITEM;
-
-typedef enum _PH_KNOWN_PROCESS_TYPE PH_KNOWN_PROCESS_TYPE;
-
-typedef struct _PH_THREAD_PROVIDER
-{
-    PPH_HASHTABLE ThreadHashtable;
-    PH_FAST_LOCK ThreadHashtableLock;
-    PH_CALLBACK ThreadAddedEvent;
-    PH_CALLBACK ThreadModifiedEvent;
-    PH_CALLBACK ThreadRemovedEvent;
-    PH_CALLBACK UpdatedEvent;
-    PH_CALLBACK LoadingStateChangedEvent;
-
-    HANDLE ProcessId;
-    HANDLE ProcessHandle;
-    BOOLEAN HasServices;
-    BOOLEAN HasServicesKnown;
-    BOOLEAN Terminating;
-    struct _PH_SYMBOL_PROVIDER *SymbolProvider;
-
-    SLIST_HEADER QueryListHead;
-    PH_QUEUED_LOCK LoadSymbolsLock;
-    LONG SymbolsLoading;
-    ULONG64 RunId;
-    ULONG64 SymbolsLoadedRunId;
-} PH_THREAD_PROVIDER, *PPH_THREAD_PROVIDER;
-
-PHAPPAPI
-PPH_STRING
-NTAPI
-PhGetThreadPriorityWin32String(
-    _In_ LONG PriorityWin32
-    );
-
-#define PH_HANDLE_FILE_SHARED_READ 0x1
-#define PH_HANDLE_FILE_SHARED_WRITE 0x2
-#define PH_HANDLE_FILE_SHARED_DELETE 0x4
-#define PH_HANDLE_FILE_SHARED_MASK 0x7
-
-typedef struct _PH_HANDLE_ITEM
-{
-    PH_HASH_ENTRY HashEntry;
-
-    HANDLE Handle;
-    PVOID Object;
-    ULONG Attributes;
-    ACCESS_MASK GrantedAccess;
-    ULONG FileFlags;
-
-    PPH_STRING TypeName;
-    PPH_STRING ObjectName;
-    PPH_STRING BestObjectName;
-
-    WCHAR HandleString[PH_PTR_STR_LEN_1];
-    WCHAR ObjectString[PH_PTR_STR_LEN_1];
-    WCHAR GrantedAccessString[PH_PTR_STR_LEN_1];
-} PH_HANDLE_ITEM, *PPH_HANDLE_ITEM;
-
-typedef struct _PH_HANDLE_PROVIDER
-{
-    PPH_HASH_ENTRY *HandleHashSet;
-    ULONG HandleHashSetSize;
-    ULONG HandleHashSetCount;
-    PH_QUEUED_LOCK HandleHashSetLock;
-
-    PH_CALLBACK HandleAddedEvent;
-    PH_CALLBACK HandleModifiedEvent;
-    PH_CALLBACK HandleRemovedEvent;
-    PH_CALLBACK UpdatedEvent;
-
-    HANDLE ProcessId;
-    HANDLE ProcessHandle;
-
-    PPH_HASHTABLE TempListHashtable;
-    NTSTATUS RunStatus;
-} PH_HANDLE_PROVIDER, *PPH_HANDLE_PROVIDER;
-
-typedef enum _PH_MEMORY_REGION_TYPE
-{
-    UnknownRegion,
-    CustomRegion,
-    UnusableRegion,
-    MappedFileRegion,
-    UserSharedDataRegion,
-    PebRegion,
-    Peb32Region,
-    TebRegion,
-    Teb32Region, // Not used
-    StackRegion,
-    Stack32Region,
-    HeapRegion,
-    Heap32Region,
-    HeapSegmentRegion,
-    HeapSegment32Region
-} PH_MEMORY_REGION_TYPE;
-
-typedef struct _PH_MEMORY_ITEM
-{
-    LIST_ENTRY ListEntry;
-    PH_AVL_LINKS Links;
-
-    union
-    {
-        struct
-        {
-            PVOID BaseAddress;
-            PVOID AllocationBase;
-            ULONG AllocationProtect;
-            SIZE_T RegionSize;
-            ULONG State;
-            ULONG Protect;
-            ULONG Type;
-        };
-        MEMORY_BASIC_INFORMATION BasicInfo;
-    };
-
-    struct _PH_MEMORY_ITEM *AllocationBaseItem;
-
-    SIZE_T CommittedSize;
-    SIZE_T PrivateSize;
-
-    SIZE_T TotalWorkingSetPages;
-    SIZE_T PrivateWorkingSetPages;
-    SIZE_T SharedWorkingSetPages;
-    SIZE_T ShareableWorkingSetPages;
-    SIZE_T LockedWorkingSetPages;
-
-    PH_MEMORY_REGION_TYPE RegionType;
-
-    union
-    {
-        struct
-        {
-            PPH_STRING Text;
-            BOOLEAN PropertyOfAllocationBase;
-        } Custom;
-        struct
-        {
-            PPH_STRING FileName;
-        } MappedFile;
-        struct
-        {
-            HANDLE ThreadId;
-        } Teb;
-        struct
-        {
-            HANDLE ThreadId;
-        } Stack;
-        struct
-        {
-            ULONG Index;
-        } Heap;
-        struct
-        {
-            struct _PH_MEMORY_ITEM *HeapItem;
-        } HeapSegment;
-    } u;
-} PH_MEMORY_ITEM, *PPH_MEMORY_ITEM;
-
-typedef struct _PH_MEMORY_ITEM_LIST
-{
-    HANDLE ProcessId;
-    PH_AVL_TREE Set;
-    LIST_ENTRY ListHead;
-} PH_MEMORY_ITEM_LIST, *PPH_MEMORY_ITEM_LIST;
-
-PHAPPAPI
-VOID
-NTAPI
-PhDeleteMemoryItemList(
-    _In_ PPH_MEMORY_ITEM_LIST List
-    );
-
-PHAPPAPI
-PPH_MEMORY_ITEM
-NTAPI
-PhLookupMemoryItemList(
-    _In_ PPH_MEMORY_ITEM_LIST List,
-    _In_ PVOID Address
-    );
-
-#define PH_QUERY_MEMORY_IGNORE_FREE 0x1
-#define PH_QUERY_MEMORY_REGION_TYPE 0x2
-#define PH_QUERY_MEMORY_WS_COUNTERS 0x4
-
-PHAPPAPI
-NTSTATUS
-NTAPI
-PhQueryMemoryItemList(
-    _In_ HANDLE ProcessId,
-    _In_ ULONG Flags,
-    _Out_ PPH_MEMORY_ITEM_LIST List
-    );
-
-//
-// colmgr
-//
-
-typedef LONG (NTAPI *PPH_CM_POST_SORT_FUNCTION)(
-    _In_ LONG Result,
-    _In_ PVOID Node1,
-    _In_ PVOID Node2,
-    _In_ PH_SORT_ORDER SortOrder
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhCmLoadSettings(
-    _In_ HWND TreeNewHandle,
-    _In_ PPH_STRINGREF Settings
-    );
-
-PHAPPAPI
-PPH_STRING
-NTAPI
-PhCmSaveSettings(
-    _In_ HWND TreeNewHandle
-    );
-
-//
 // uimodels
-//
 
-// Common state highlighting support
-
-typedef struct _PH_SH_STATE
-{
-    PH_ITEM_STATE State;
-    HANDLE StateListHandle;
-    ULONG TickCount;
-} PH_SH_STATE, *PPH_SH_STATE;
-
-typedef struct _PH_PROCESS_NODE
-{
-    PH_TREENEW_NODE Node;
-
-    PH_HASH_ENTRY HashEntry;
-
-    PH_SH_STATE ShState;
-
-    HANDLE ProcessId;
-    PPH_PROCESS_ITEM ProcessItem;
-
-    struct _PH_PROCESS_NODE *Parent;
-    PPH_LIST Children;
-
-} PH_PROCESS_NODE, *PPH_PROCESS_NODE;
-
-PHAPPAPI
-struct _PH_TN_FILTER_SUPPORT *
-NTAPI
-PhGetFilterSupportProcessTreeList(
-    VOID
-    );
-
-PHAPPAPI
-PPH_PROCESS_NODE
-NTAPI
-PhFindProcessNode(
-    _In_ HANDLE ProcessId
-    );
-
-PHAPPAPI
-VOID
-NTAPI
-PhUpdateProcessNode(
-    _In_ PPH_PROCESS_NODE ProcessNode
-    );
-
-PHAPPAPI
-PPH_PROCESS_ITEM
-NTAPI
-PhGetSelectedProcessItem(
-    VOID
-    );
-
-PHAPPAPI
-VOID
-NTAPI
-PhGetSelectedProcessItems(
-    _Out_ PPH_PROCESS_ITEM **Processes,
-    _Out_ PULONG NumberOfProcesses
-    );
-
-PHAPPAPI
-VOID
-NTAPI
-PhDeselectAllProcessNodes(
-    VOID
-    );
-
-PHAPPAPI
-VOID
-NTAPI
-PhExpandAllProcessNodes(
-    _In_ BOOLEAN Expand
-    );
-
-PHAPPAPI
-VOID
-NTAPI
-PhInvalidateAllProcessNodes(
-    VOID
-    );
-
-PHAPPAPI
-VOID
-NTAPI
-PhSelectAndEnsureVisibleProcessNode(
-    _In_ PPH_PROCESS_NODE ProcessNode
-    );
-
-typedef struct _PH_SERVICE_NODE
-{
-    PH_TREENEW_NODE Node;
-
-    PH_SH_STATE ShState;
-
-    PPH_SERVICE_ITEM ServiceItem;
-
-} PH_SERVICE_NODE, *PPH_SERVICE_NODE;
-
-PHAPPAPI
-struct _PH_TN_FILTER_SUPPORT *
-NTAPI
-PhGetFilterSupportServiceTreeList(
-    VOID
-    );
-
-PHAPPAPI
-PPH_SERVICE_NODE
-NTAPI
-PhFindServiceNode(
-    _In_ PPH_SERVICE_ITEM ServiceItem
-    );
-
-PHAPPAPI
-VOID
-NTAPI
-PhUpdateServiceNode(
-    _In_ PPH_SERVICE_NODE ServiceNode
-    );
-
-PHAPPAPI
-PPH_SERVICE_ITEM
-NTAPI
-PhGetSelectedServiceItem(
-    VOID
-    );
-
-PHAPPAPI
-VOID
-NTAPI
-PhGetSelectedServiceItems(
-    _Out_ PPH_SERVICE_ITEM **Services,
-    _Out_ PULONG NumberOfServices
-    );
-
-PHAPPAPI
-VOID
-NTAPI
-PhDeselectAllServiceNodes(
-    VOID
-    );
-
-PHAPPAPI
-VOID
-NTAPI
-PhSelectAndEnsureVisibleServiceNode(
-    _In_ PPH_SERVICE_NODE ServiceNode
-    );
-
-typedef struct _PH_NETWORK_NODE
-{
-    PH_TREENEW_NODE Node;
-
-    PH_SH_STATE ShState;
-
-    PPH_NETWORK_ITEM NetworkItem;
-
-} PH_NETWORK_NODE, *PPH_NETWORK_NODE;
-
-PHAPPAPI
-struct _PH_TN_FILTER_SUPPORT *
-NTAPI
-PhGetFilterSupportNetworkTreeList(
-    VOID
-    );
-
-PHAPPAPI
-PPH_NETWORK_NODE
-NTAPI
-PhFindNetworkNode(
-    _In_ PPH_NETWORK_ITEM NetworkItem
-    );
-
-typedef struct _PH_THREAD_NODE
-{
-    PH_TREENEW_NODE Node;
-
-    PH_SH_STATE ShState;
-
-    HANDLE ThreadId;
-    PPH_THREAD_ITEM ThreadItem;
-
-} PH_THREAD_NODE, *PPH_THREAD_NODE;
-
-typedef struct _PH_MODULE_NODE
-{
-    PH_TREENEW_NODE Node;
-
-    PH_SH_STATE ShState;
-
-    PPH_MODULE_ITEM ModuleItem;
-
-} PH_MODULE_NODE, *PPH_MODULE_NODE;
-
-typedef struct _PH_HANDLE_NODE
-{
-    PH_TREENEW_NODE Node;
-
-    PH_SH_STATE ShState;
-
-    HANDLE Handle;
-    PPH_HANDLE_ITEM HandleItem;
-
-} PH_HANDLE_NODE, *PPH_HANDLE_NODE;
-
-typedef struct _PH_MEMORY_NODE
-{
-    PH_TREENEW_NODE Node;
-
-    BOOLEAN IsAllocationBase;
-    BOOLEAN Reserved1;
-    USHORT Reserved2;
-    PPH_MEMORY_ITEM MemoryItem;
-
-    struct _PH_MEMORY_NODE *Parent;
-    PPH_LIST Children;
-
-} PH_MEMORY_NODE, *PPH_MEMORY_NODE;
+typedef struct _PH_PROCESS_NODE *PPH_PROCESS_NODE;
+typedef struct _PH_SERVICE_NODE *PPH_SERVICE_NODE;
+typedef struct _PH_NETWORK_NODE *PPH_NETWORK_NODE;
+typedef struct _PH_MODULE_NODE *PPH_MODULE_NODE;
+typedef struct _PH_THREAD_NODE *PPH_THREAD_NODE;
+typedef struct _PH_HANDLE_NODE *PPH_HANDLE_NODE;
+typedef struct _PH_MEMORY_NODE *PPH_MEMORY_NODE;
 
 //
 // phapp
@@ -1075,7 +192,9 @@ PhCopyListView(
     );
 
 PHAPPAPI
-VOID PhHandleListViewNotifyForCopy(
+VOID
+NTAPI
+PhHandleListViewNotifyForCopy(
     _In_ LPARAM lParam,
     _In_ HWND ListViewHandle
     );
@@ -1551,379 +670,6 @@ PhFormatLogEntry(
     _In_ PPH_LOG_ENTRY Entry
     );
 
-typedef enum _PH_PHSVC_MODE
-{
-    ElevatedPhSvcMode,
-    Wow64PhSvcMode
-} PH_PHSVC_MODE;
-            
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiConnectToPhSvc(
-    _In_opt_ HWND hWnd,
-    _In_ BOOLEAN ConnectOnly
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiConnectToPhSvcEx(
-    _In_opt_ HWND hWnd,
-    _In_ PH_PHSVC_MODE Mode,
-    _In_ BOOLEAN ConnectOnly
-    );
-
-PHAPPAPI
-VOID
-NTAPI
-PhUiDisconnectFromPhSvc(
-    VOID
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiLockComputer(
-    _In_ HWND hWnd
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiLogoffComputer(
-    _In_ HWND hWnd
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiSleepComputer(
-    _In_ HWND hWnd
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiHibernateComputer(
-    _In_ HWND hWnd
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiRestartComputer(
-    _In_ HWND hWnd,
-    _In_ ULONG Flags
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiShutdownComputer(
-    _In_ HWND hWnd,
-    _In_ ULONG Flags
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiConnectSession(
-    _In_ HWND hWnd,
-    _In_ ULONG SessionId
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiDisconnectSession(
-    _In_ HWND hWnd,
-    _In_ ULONG SessionId
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiLogoffSession(
-    _In_ HWND hWnd,
-    _In_ ULONG SessionId
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiTerminateProcesses(
-    _In_ HWND hWnd,
-    _In_ PPH_PROCESS_ITEM *Processes,
-    _In_ ULONG NumberOfProcesses
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiTerminateTreeProcess(
-    _In_ HWND hWnd,
-    _In_ PPH_PROCESS_ITEM Process
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiSuspendProcesses(
-    _In_ HWND hWnd,
-    _In_ PPH_PROCESS_ITEM *Processes,
-    _In_ ULONG NumberOfProcesses
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiResumeProcesses(
-    _In_ HWND hWnd,
-    _In_ PPH_PROCESS_ITEM *Processes,
-    _In_ ULONG NumberOfProcesses
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiRestartProcess(
-    _In_ HWND hWnd,
-    _In_ PPH_PROCESS_ITEM Process
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiDebugProcess(
-    _In_ HWND hWnd,
-    _In_ PPH_PROCESS_ITEM Process
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiReduceWorkingSetProcesses(
-    _In_ HWND hWnd,
-    _In_ PPH_PROCESS_ITEM *Processes,
-    _In_ ULONG NumberOfProcesses
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiSetVirtualizationProcess(
-    _In_ HWND hWnd,
-    _In_ PPH_PROCESS_ITEM Process,
-    _In_ BOOLEAN Enable
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiDetachFromDebuggerProcess(
-    _In_ HWND hWnd,
-    _In_ PPH_PROCESS_ITEM Process
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiInjectDllProcess(
-    _In_ HWND hWnd,
-    _In_ PPH_PROCESS_ITEM Process
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiSetIoPriorityProcesses(
-    _In_ HWND hWnd,
-    _In_ PPH_PROCESS_ITEM *Processes,
-    _In_ ULONG NumberOfProcesses,
-    _In_ ULONG IoPriority
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiSetPagePriorityProcess(
-    _In_ HWND hWnd,
-    _In_ PPH_PROCESS_ITEM Process,
-    _In_ ULONG PagePriority
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiSetPriorityProcesses(
-    _In_ HWND hWnd,
-    _In_ PPH_PROCESS_ITEM *Processes,
-    _In_ ULONG NumberOfProcesses,
-    _In_ ULONG PriorityClass
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiSetDepStatusProcess(
-    _In_ HWND hWnd,
-    _In_ PPH_PROCESS_ITEM Process
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiStartService(
-    _In_ HWND hWnd,
-    _In_ PPH_SERVICE_ITEM Service
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiContinueService(
-    _In_ HWND hWnd,
-    _In_ PPH_SERVICE_ITEM Service
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiPauseService(
-    _In_ HWND hWnd,
-    _In_ PPH_SERVICE_ITEM Service
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiStopService(
-    _In_ HWND hWnd,
-    _In_ PPH_SERVICE_ITEM Service
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiDeleteService(
-    _In_ HWND hWnd,
-    _In_ PPH_SERVICE_ITEM Service
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiCloseConnections(
-    _In_ HWND hWnd,
-    _In_ PPH_NETWORK_ITEM *Connections,
-    _In_ ULONG NumberOfConnections
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiTerminateThreads(
-    _In_ HWND hWnd,
-    _In_ PPH_THREAD_ITEM *Threads,
-    _In_ ULONG NumberOfThreads
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiForceTerminateThreads(
-    _In_ HWND hWnd,
-    _In_ HANDLE ProcessId,
-    _In_ PPH_THREAD_ITEM *Threads,
-    _In_ ULONG NumberOfThreads
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiSuspendThreads(
-    _In_ HWND hWnd,
-    _In_ PPH_THREAD_ITEM *Threads,
-    _In_ ULONG NumberOfThreads
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiResumeThreads(
-    _In_ HWND hWnd,
-    _In_ PPH_THREAD_ITEM *Threads,
-    _In_ ULONG NumberOfThreads
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiSetPriorityThread(
-    _In_ HWND hWnd,
-    _In_ PPH_THREAD_ITEM Thread,
-    _In_ ULONG ThreadPriorityWin32
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiSetIoPriorityThread(
-    _In_ HWND hWnd,
-    _In_ PPH_THREAD_ITEM Thread,
-    _In_ ULONG IoPriority
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiSetPagePriorityThread(
-    _In_ HWND hWnd,
-    _In_ PPH_THREAD_ITEM Thread,
-    _In_ ULONG PagePriority
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiUnloadModule(
-    _In_ HWND hWnd,
-    _In_ HANDLE ProcessId,
-    _In_ PPH_MODULE_ITEM Module
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiFreeMemory(
-    _In_ HWND hWnd,
-    _In_ HANDLE ProcessId,
-    _In_ PPH_MEMORY_ITEM MemoryItem,
-    _In_ BOOLEAN Free
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiCloseHandles(
-    _In_ HWND hWnd,
-    _In_ HANDLE ProcessId,
-    _In_ PPH_HANDLE_ITEM *Handles,
-    _In_ ULONG NumberOfHandles,
-    _In_ BOOLEAN Warn
-    );
-
-PHAPPAPI
-BOOLEAN
-NTAPI
-PhUiSetAttributesHandle(
-    _In_ HWND hWnd,
-    _In_ HANDLE ProcessId,
-    _In_ PPH_HANDLE_ITEM Handle,
-    _In_ ULONG Attributes
-    );
-
 PHAPPAPI
 BOOLEAN
 NTAPI
@@ -1998,6 +744,975 @@ PhCreateServiceListControl(
     _In_ PPH_SERVICE_ITEM *Services,
     _In_ ULONG NumberOfServices
     );
+
+//
+// procprv
+//
+
+PHAPPAPI extern PH_CALLBACK PhProcessAddedEvent; // phapppub
+PHAPPAPI extern PH_CALLBACK PhProcessModifiedEvent; // phapppub
+PHAPPAPI extern PH_CALLBACK PhProcessRemovedEvent; // phapppub
+PHAPPAPI extern PH_CALLBACK PhProcessesUpdatedEvent; // phapppub
+
+#define DPCS_PROCESS_ID ((HANDLE)(LONG_PTR)-2)
+#define INTERRUPTS_PROCESS_ID ((HANDLE)(LONG_PTR)-3)
+
+// DPCs, Interrupts and System Idle Process are not real.
+// Non-"real" processes can never be opened.
+#define PH_IS_REAL_PROCESS_ID(ProcessId) ((LONG_PTR)(ProcessId) > 0)
+
+// DPCs and Interrupts are fake, but System Idle Process is not.
+#define PH_IS_FAKE_PROCESS_ID(ProcessId) ((LONG_PTR)(ProcessId) < 0)
+
+// The process item has been removed.
+#define PH_PROCESS_ITEM_REMOVED 0x1
+
+typedef enum _VERIFY_RESULT VERIFY_RESULT;
+typedef struct _PH_PROCESS_RECORD *PPH_PROCESS_RECORD;
+
+typedef struct _PH_PROCESS_ITEM
+{
+    PH_HASH_ENTRY HashEntry;
+    ULONG State;
+    PPH_PROCESS_RECORD Record;
+
+    // Basic
+
+    HANDLE ProcessId;
+    HANDLE ParentProcessId;
+    PPH_STRING ProcessName;
+    ULONG SessionId;
+
+    LARGE_INTEGER CreateTime;
+
+    // Handles
+
+    HANDLE QueryHandle;
+
+    // Parameters
+
+    PPH_STRING FileName;
+    PPH_STRING CommandLine;
+
+    // File
+
+    HICON SmallIcon;
+    HICON LargeIcon;
+    PH_IMAGE_VERSION_INFO VersionInfo;
+
+    // Security
+
+    PPH_STRING UserName;
+    TOKEN_ELEVATION_TYPE ElevationType;
+    MANDATORY_LEVEL IntegrityLevel;
+    PWSTR IntegrityString;
+
+    // Other
+
+    PPH_STRING JobName;
+    HANDLE ConsoleHostProcessId;
+
+    // Signature, Packed
+
+    VERIFY_RESULT VerifyResult;
+    PPH_STRING VerifySignerName;
+    ULONG ImportFunctions;
+    ULONG ImportModules;
+
+    // Flags
+
+    union
+    {
+        ULONG Flags;
+        struct
+        {
+            ULONG UpdateIsDotNet : 1;
+            ULONG IsBeingDebugged : 1;
+            ULONG IsDotNet : 1;
+            ULONG IsElevated : 1;
+            ULONG IsInJob : 1;
+            ULONG IsInSignificantJob : 1;
+            ULONG IsPacked : 1;
+            ULONG Reserved : 1;
+            ULONG IsSuspended : 1;
+            ULONG IsWow64 : 1;
+            ULONG IsImmersive : 1;
+            ULONG IsWow64Valid : 1;
+            ULONG IsPartiallySuspended : 1;
+            ULONG AddedEventSent : 1;
+            ULONG Spare : 18;
+        };
+    };
+
+    // Misc.
+
+    ULONG JustProcessed;
+    PH_EVENT Stage1Event;
+
+    PPH_POINTER_LIST ServiceList;
+    PH_QUEUED_LOCK ServiceListLock;
+
+    WCHAR ProcessIdString[PH_INT32_STR_LEN_1];
+    WCHAR ParentProcessIdString[PH_INT32_STR_LEN_1];
+    WCHAR SessionIdString[PH_INT32_STR_LEN_1];
+
+    // Dynamic
+
+    KPRIORITY BasePriority;
+    ULONG PriorityClass;
+    LARGE_INTEGER KernelTime;
+    LARGE_INTEGER UserTime;
+    ULONG NumberOfHandles;
+    ULONG NumberOfThreads;
+
+    FLOAT CpuUsage; // Below Windows 7, sum of kernel and user CPU usage; above Windows 7, cycle-based CPU usage.
+    FLOAT CpuKernelUsage;
+    FLOAT CpuUserUsage;
+
+    PH_UINT64_DELTA CpuKernelDelta;
+    PH_UINT64_DELTA CpuUserDelta;
+    PH_UINT64_DELTA IoReadDelta;
+    PH_UINT64_DELTA IoWriteDelta;
+    PH_UINT64_DELTA IoOtherDelta;
+    PH_UINT64_DELTA IoReadCountDelta;
+    PH_UINT64_DELTA IoWriteCountDelta;
+    PH_UINT64_DELTA IoOtherCountDelta;
+    PH_UINT32_DELTA ContextSwitchesDelta;
+    PH_UINT32_DELTA PageFaultsDelta;
+    PH_UINT64_DELTA CycleTimeDelta; // since WIN7
+
+    VM_COUNTERS_EX VmCounters;
+    IO_COUNTERS IoCounters;
+    SIZE_T WorkingSetPrivateSize; // since VISTA
+    ULONG PeakNumberOfThreads; // since WIN7
+    ULONG HardFaultCount; // since WIN7
+
+    ULONG SequenceNumber;
+    PH_CIRCULAR_BUFFER_FLOAT CpuKernelHistory;
+    PH_CIRCULAR_BUFFER_FLOAT CpuUserHistory;
+    PH_CIRCULAR_BUFFER_ULONG64 IoReadHistory;
+    PH_CIRCULAR_BUFFER_ULONG64 IoWriteHistory;
+    PH_CIRCULAR_BUFFER_ULONG64 IoOtherHistory;
+    PH_CIRCULAR_BUFFER_SIZE_T PrivateBytesHistory;
+    //PH_CIRCULAR_BUFFER_SIZE_T WorkingSetHistory;
+
+    // New fields
+    PH_UINTPTR_DELTA PrivateBytesDelta;
+    PPH_STRING PackageFullName;
+
+    PH_QUEUED_LOCK RemoveLock;
+} PH_PROCESS_ITEM, *PPH_PROCESS_ITEM;
+
+// The process itself is dead.
+#define PH_PROCESS_RECORD_DEAD 0x1
+// An extra reference has been added to the process record for the statistics system.
+#define PH_PROCESS_RECORD_STAT_REF 0x2
+
+typedef struct _PH_PROCESS_RECORD
+{
+    LIST_ENTRY ListEntry;
+    LONG RefCount;
+    ULONG Flags;
+
+    HANDLE ProcessId;
+    HANDLE ParentProcessId;
+    ULONG SessionId;
+    LARGE_INTEGER CreateTime;
+    LARGE_INTEGER ExitTime;
+
+    PPH_STRING ProcessName;
+    PPH_STRING FileName;
+    PPH_STRING CommandLine;
+    /*PPH_STRING UserName;*/
+} PH_PROCESS_RECORD, *PPH_PROCESS_RECORD;
+
+PHAPPAPI
+PPH_STRING
+NTAPI
+PhGetClientIdName(
+    _In_ PCLIENT_ID ClientId
+    );
+
+PHAPPAPI
+PPH_STRING
+NTAPI
+PhGetClientIdNameEx(
+    _In_ PCLIENT_ID ClientId,
+    _In_opt_ PPH_STRING ProcessName
+    );
+
+PHAPPAPI
+PWSTR
+NTAPI
+PhGetProcessPriorityClassString(
+    _In_ ULONG PriorityClass
+    );
+
+PHAPPAPI
+PPH_PROCESS_ITEM
+NTAPI
+PhReferenceProcessItem(
+    _In_ HANDLE ProcessId
+    );
+
+PHAPPAPI
+VOID
+NTAPI
+PhEnumProcessItems(
+    _Out_opt_ PPH_PROCESS_ITEM **ProcessItems,
+    _Out_ PULONG NumberOfProcessItems
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhGetStatisticsTime(
+    _In_opt_ PPH_PROCESS_ITEM ProcessItem,
+    _In_ ULONG Index,
+    _Out_ PLARGE_INTEGER Time
+    );
+
+PHAPPAPI
+PPH_STRING
+NTAPI
+PhGetStatisticsTimeString(
+    _In_opt_ PPH_PROCESS_ITEM ProcessItem,
+    _In_ ULONG Index
+    );
+
+PHAPPAPI
+VOID
+NTAPI
+PhReferenceProcessRecord(
+    _In_ PPH_PROCESS_RECORD ProcessRecord
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhReferenceProcessRecordSafe(
+    _In_ PPH_PROCESS_RECORD ProcessRecord
+    );
+
+PHAPPAPI
+VOID
+NTAPI
+PhReferenceProcessRecordForStatistics(
+    _In_ PPH_PROCESS_RECORD ProcessRecord
+    );
+
+PHAPPAPI
+VOID
+NTAPI
+PhDereferenceProcessRecord(
+    _In_ PPH_PROCESS_RECORD ProcessRecord
+    );
+
+PHAPPAPI
+PPH_PROCESS_RECORD
+NTAPI
+PhFindProcessRecord(
+    _In_opt_ HANDLE ProcessId,
+    _In_ PLARGE_INTEGER Time
+    );
+
+PHAPPAPI
+PPH_PROCESS_ITEM
+NTAPI
+PhReferenceProcessItemForParent(
+    _In_ HANDLE ParentProcessId,
+    _In_ HANDLE ProcessId,
+    _In_ PLARGE_INTEGER CreateTime
+    );
+
+PHAPPAPI
+PPH_PROCESS_ITEM
+NTAPI
+PhReferenceProcessItemForRecord(
+    _In_ PPH_PROCESS_RECORD Record
+    );
+
+//
+// srvprv
+//
+
+PHAPPAPI extern PH_CALLBACK PhServiceAddedEvent; // phapppub
+PHAPPAPI extern PH_CALLBACK PhServiceModifiedEvent; // phapppub
+PHAPPAPI extern PH_CALLBACK PhServiceRemovedEvent; // phapppub
+PHAPPAPI extern PH_CALLBACK PhServicesUpdatedEvent; // phapppub
+
+typedef struct _PH_SERVICE_ITEM
+{
+    PH_STRINGREF Key; // points to Name
+    PPH_STRING Name;
+    PPH_STRING DisplayName;
+
+    // State
+    ULONG Type;
+    ULONG State;
+    ULONG ControlsAccepted;
+    ULONG Flags; // e.g. SERVICE_RUNS_IN_SYSTEM_PROCESS
+    HANDLE ProcessId;
+
+    // Config
+    ULONG StartType;
+    ULONG ErrorControl;
+
+} PH_SERVICE_ITEM, *PPH_SERVICE_ITEM;
+
+typedef struct _PH_SERVICE_MODIFIED_DATA
+{
+    PPH_SERVICE_ITEM Service;
+    PH_SERVICE_ITEM OldService;
+} PH_SERVICE_MODIFIED_DATA, *PPH_SERVICE_MODIFIED_DATA;
+
+typedef enum _PH_SERVICE_CHANGE
+{
+    ServiceStarted,
+    ServiceContinued,
+    ServicePaused,
+    ServiceStopped
+} PH_SERVICE_CHANGE, *PPH_SERVICE_CHANGE;
+
+PHAPPAPI
+PPH_SERVICE_ITEM
+NTAPI
+PhReferenceServiceItem(
+    _In_ PWSTR Name
+    );
+
+PHAPPAPI
+PH_SERVICE_CHANGE
+NTAPI
+PhGetServiceChange(
+    _In_ PPH_SERVICE_MODIFIED_DATA Data
+    );
+
+//
+// netprv
+//
+
+PHAPPAPI extern PH_CALLBACK PhNetworkItemAddedEvent; // phapppub
+PHAPPAPI extern PH_CALLBACK PhNetworkItemModifiedEvent; // phapppub
+PHAPPAPI extern PH_CALLBACK PhNetworkItemRemovedEvent; // phapppub
+PHAPPAPI extern PH_CALLBACK PhNetworkItemsUpdatedEvent; // phapppub
+
+#define PH_NETWORK_OWNER_INFO_SIZE 16
+
+typedef struct _PH_NETWORK_ITEM
+{
+    ULONG ProtocolType;
+    PH_IP_ENDPOINT LocalEndpoint;
+    PH_IP_ENDPOINT RemoteEndpoint;
+    ULONG State;
+    HANDLE ProcessId;
+
+    PPH_STRING ProcessName;
+    HICON ProcessIcon;
+    BOOLEAN ProcessIconValid;
+    PPH_STRING OwnerName;
+
+    BOOLEAN JustResolved;
+
+    WCHAR LocalAddressString[65];
+    WCHAR LocalPortString[PH_INT32_STR_LEN_1];
+    WCHAR RemoteAddressString[65];
+    WCHAR RemotePortString[PH_INT32_STR_LEN_1];
+    PPH_STRING LocalHostString;
+    PPH_STRING RemoteHostString;
+
+    LARGE_INTEGER CreateTime;
+    ULONGLONG OwnerInfo[PH_NETWORK_OWNER_INFO_SIZE];
+} PH_NETWORK_ITEM, *PPH_NETWORK_ITEM;
+
+PHAPPAPI
+PPH_NETWORK_ITEM
+NTAPI
+PhReferenceNetworkItem(
+    _In_ ULONG ProtocolType,
+    _In_ PPH_IP_ENDPOINT LocalEndpoint,
+    _In_ PPH_IP_ENDPOINT RemoteEndpoint,
+    _In_ HANDLE ProcessId
+    );
+
+PHAPPAPI
+PWSTR
+NTAPI
+PhGetProtocolTypeName(
+    _In_ ULONG ProtocolType
+    );
+
+PHAPPAPI
+PWSTR
+NTAPI
+PhGetTcpStateName(
+    _In_ ULONG State
+    );
+
+//
+// modprv
+//
+
+typedef struct _PH_MODULE_ITEM
+{
+    PVOID BaseAddress;
+    ULONG Size;
+    ULONG Flags;
+    ULONG Type;
+    USHORT LoadReason;
+    USHORT LoadCount;
+    PPH_STRING Name;
+    PPH_STRING FileName;
+    PH_IMAGE_VERSION_INFO VersionInfo;
+
+    WCHAR BaseAddressString[PH_PTR_STR_LEN_1];
+
+    BOOLEAN IsFirst;
+    BOOLEAN JustProcessed;
+
+    enum _VERIFY_RESULT VerifyResult;
+    PPH_STRING VerifySignerName;
+
+    ULONG ImageTimeDateStamp;
+    USHORT ImageCharacteristics;
+    USHORT ImageDllCharacteristics;
+
+    LARGE_INTEGER LoadTime;
+
+    LARGE_INTEGER FileLastWriteTime;
+    LARGE_INTEGER FileEndOfFile;
+} PH_MODULE_ITEM, *PPH_MODULE_ITEM;
+
+typedef struct _PH_MODULE_PROVIDER
+{
+    PPH_HASHTABLE ModuleHashtable;
+    PH_FAST_LOCK ModuleHashtableLock;
+    PH_CALLBACK ModuleAddedEvent;
+    PH_CALLBACK ModuleModifiedEvent;
+    PH_CALLBACK ModuleRemovedEvent;
+    PH_CALLBACK UpdatedEvent;
+
+    HANDLE ProcessId;
+    HANDLE ProcessHandle;
+    PPH_STRING PackageFullName;
+    SLIST_HEADER QueryListHead;
+    NTSTATUS RunStatus;
+} PH_MODULE_PROVIDER, *PPH_MODULE_PROVIDER;
+
+//
+// thrdprv
+//
+
+typedef struct _PH_THREAD_ITEM
+{
+    HANDLE ThreadId;
+
+    LARGE_INTEGER CreateTime;
+    LARGE_INTEGER KernelTime;
+    LARGE_INTEGER UserTime;
+
+    FLOAT CpuUsage;
+    PH_UINT64_DELTA CpuKernelDelta;
+    PH_UINT64_DELTA CpuUserDelta;
+
+    PH_UINT32_DELTA ContextSwitchesDelta;
+    PH_UINT64_DELTA CyclesDelta;
+    LONG Priority;
+    LONG BasePriority;
+    ULONG64 StartAddress;
+    PPH_STRING StartAddressString;
+    PPH_STRING StartAddressFileName;
+    enum _PH_SYMBOL_RESOLVE_LEVEL StartAddressResolveLevel;
+    KTHREAD_STATE State;
+    KWAIT_REASON WaitReason;
+    LONG BasePriorityIncrement;
+    PPH_STRING ServiceName;
+
+    HANDLE ThreadHandle;
+
+    BOOLEAN IsGuiThread;
+    BOOLEAN JustResolved;
+
+    WCHAR ThreadIdString[PH_INT32_STR_LEN_1];
+} PH_THREAD_ITEM, *PPH_THREAD_ITEM;
+
+typedef enum _PH_KNOWN_PROCESS_TYPE PH_KNOWN_PROCESS_TYPE;
+
+typedef struct _PH_THREAD_PROVIDER
+{
+    PPH_HASHTABLE ThreadHashtable;
+    PH_FAST_LOCK ThreadHashtableLock;
+    PH_CALLBACK ThreadAddedEvent;
+    PH_CALLBACK ThreadModifiedEvent;
+    PH_CALLBACK ThreadRemovedEvent;
+    PH_CALLBACK UpdatedEvent;
+    PH_CALLBACK LoadingStateChangedEvent;
+
+    HANDLE ProcessId;
+    HANDLE ProcessHandle;
+    BOOLEAN HasServices;
+    BOOLEAN HasServicesKnown;
+    BOOLEAN Terminating;
+    struct _PH_SYMBOL_PROVIDER *SymbolProvider;
+
+    SLIST_HEADER QueryListHead;
+    PH_QUEUED_LOCK LoadSymbolsLock;
+    LONG SymbolsLoading;
+    ULONG64 RunId;
+    ULONG64 SymbolsLoadedRunId;
+} PH_THREAD_PROVIDER, *PPH_THREAD_PROVIDER;
+
+//
+// hndlprv
+//
+
+#define PH_HANDLE_FILE_SHARED_READ 0x1
+#define PH_HANDLE_FILE_SHARED_WRITE 0x2
+#define PH_HANDLE_FILE_SHARED_DELETE 0x4
+#define PH_HANDLE_FILE_SHARED_MASK 0x7
+
+typedef struct _PH_HANDLE_ITEM
+{
+    PH_HASH_ENTRY HashEntry;
+
+    HANDLE Handle;
+    PVOID Object;
+    ULONG Attributes;
+    ACCESS_MASK GrantedAccess;
+    ULONG FileFlags;
+
+    PPH_STRING TypeName;
+    PPH_STRING ObjectName;
+    PPH_STRING BestObjectName;
+
+    WCHAR HandleString[PH_PTR_STR_LEN_1];
+    WCHAR ObjectString[PH_PTR_STR_LEN_1];
+    WCHAR GrantedAccessString[PH_PTR_STR_LEN_1];
+} PH_HANDLE_ITEM, *PPH_HANDLE_ITEM;
+
+typedef struct _PH_HANDLE_PROVIDER
+{
+    PPH_HASH_ENTRY *HandleHashSet;
+    ULONG HandleHashSetSize;
+    ULONG HandleHashSetCount;
+    PH_QUEUED_LOCK HandleHashSetLock;
+
+    PH_CALLBACK HandleAddedEvent;
+    PH_CALLBACK HandleModifiedEvent;
+    PH_CALLBACK HandleRemovedEvent;
+    PH_CALLBACK UpdatedEvent;
+
+    HANDLE ProcessId;
+    HANDLE ProcessHandle;
+
+    PPH_HASHTABLE TempListHashtable;
+    NTSTATUS RunStatus;
+} PH_HANDLE_PROVIDER, *PPH_HANDLE_PROVIDER;
+
+//
+// memprv
+//
+
+typedef enum _PH_MEMORY_REGION_TYPE
+{
+    UnknownRegion,
+    CustomRegion,
+    UnusableRegion,
+    MappedFileRegion,
+    UserSharedDataRegion,
+    PebRegion,
+    Peb32Region,
+    TebRegion,
+    Teb32Region, // Not used
+    StackRegion,
+    Stack32Region,
+    HeapRegion,
+    Heap32Region,
+    HeapSegmentRegion,
+    HeapSegment32Region
+} PH_MEMORY_REGION_TYPE;
+
+typedef struct _PH_MEMORY_ITEM
+{
+    LIST_ENTRY ListEntry;
+    PH_AVL_LINKS Links;
+
+    union
+    {
+        struct
+        {
+            PVOID BaseAddress;
+            PVOID AllocationBase;
+            ULONG AllocationProtect;
+            SIZE_T RegionSize;
+            ULONG State;
+            ULONG Protect;
+            ULONG Type;
+        };
+        MEMORY_BASIC_INFORMATION BasicInfo;
+    };
+
+    struct _PH_MEMORY_ITEM *AllocationBaseItem;
+
+    SIZE_T CommittedSize;
+    SIZE_T PrivateSize;
+
+    SIZE_T TotalWorkingSetPages;
+    SIZE_T PrivateWorkingSetPages;
+    SIZE_T SharedWorkingSetPages;
+    SIZE_T ShareableWorkingSetPages;
+    SIZE_T LockedWorkingSetPages;
+
+    PH_MEMORY_REGION_TYPE RegionType;
+
+    union
+    {
+        struct
+        {
+            PPH_STRING Text;
+            BOOLEAN PropertyOfAllocationBase;
+        } Custom;
+        struct
+        {
+            PPH_STRING FileName;
+        } MappedFile;
+        struct
+        {
+            HANDLE ThreadId;
+        } Teb;
+        struct
+        {
+            HANDLE ThreadId;
+        } Stack;
+        struct
+        {
+            ULONG Index;
+        } Heap;
+        struct
+        {
+            struct _PH_MEMORY_ITEM *HeapItem;
+        } HeapSegment;
+    } u;
+} PH_MEMORY_ITEM, *PPH_MEMORY_ITEM;
+
+typedef struct _PH_MEMORY_ITEM_LIST
+{
+    HANDLE ProcessId;
+    PH_AVL_TREE Set;
+    LIST_ENTRY ListHead;
+} PH_MEMORY_ITEM_LIST, *PPH_MEMORY_ITEM_LIST;
+
+PHAPPAPI
+VOID
+NTAPI
+PhDeleteMemoryItemList(
+    _In_ PPH_MEMORY_ITEM_LIST List
+    );
+
+PHAPPAPI
+PPH_MEMORY_ITEM
+NTAPI
+PhLookupMemoryItemList(
+    _In_ PPH_MEMORY_ITEM_LIST List,
+    _In_ PVOID Address
+    );
+
+#define PH_QUERY_MEMORY_IGNORE_FREE 0x1
+#define PH_QUERY_MEMORY_REGION_TYPE 0x2
+#define PH_QUERY_MEMORY_WS_COUNTERS 0x4
+
+PHAPPAPI
+NTSTATUS
+NTAPI
+PhQueryMemoryItemList(
+    _In_ HANDLE ProcessId,
+    _In_ ULONG Flags,
+    _Out_ PPH_MEMORY_ITEM_LIST List
+    );
+
+//
+// phuisup
+//
+
+// Common state highlighting support
+
+typedef struct _PH_SH_STATE
+{
+    PH_ITEM_STATE State;
+    HANDLE StateListHandle;
+    ULONG TickCount;
+} PH_SH_STATE, *PPH_SH_STATE;
+
+//
+// colmgr
+//
+
+typedef LONG (NTAPI *PPH_CM_POST_SORT_FUNCTION)(
+    _In_ LONG Result,
+    _In_ PVOID Node1,
+    _In_ PVOID Node2,
+    _In_ PH_SORT_ORDER SortOrder
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhCmLoadSettings(
+    _In_ HWND TreeNewHandle,
+    _In_ PPH_STRINGREF Settings
+    );
+
+PHAPPAPI
+PPH_STRING
+NTAPI
+PhCmSaveSettings(
+    _In_ HWND TreeNewHandle
+    );
+
+//
+// proctree
+//
+
+typedef struct _PH_PROCESS_NODE
+{
+    PH_TREENEW_NODE Node;
+
+    PH_HASH_ENTRY HashEntry;
+
+    PH_SH_STATE ShState;
+
+    HANDLE ProcessId;
+    PPH_PROCESS_ITEM ProcessItem;
+
+    struct _PH_PROCESS_NODE *Parent;
+    PPH_LIST Children;
+
+} PH_PROCESS_NODE, *PPH_PROCESS_NODE;
+
+PHAPPAPI
+struct _PH_TN_FILTER_SUPPORT *
+NTAPI
+PhGetFilterSupportProcessTreeList(
+    VOID
+    );
+
+PHAPPAPI
+PPH_PROCESS_NODE
+NTAPI
+PhFindProcessNode(
+    _In_ HANDLE ProcessId
+    );
+
+PHAPPAPI
+VOID
+NTAPI
+PhUpdateProcessNode(
+    _In_ PPH_PROCESS_NODE ProcessNode
+    );
+
+PHAPPAPI
+PPH_PROCESS_ITEM
+NTAPI
+PhGetSelectedProcessItem(
+    VOID
+    );
+
+PHAPPAPI
+VOID
+NTAPI
+PhGetSelectedProcessItems(
+    _Out_ PPH_PROCESS_ITEM **Processes,
+    _Out_ PULONG NumberOfProcesses
+    );
+
+PHAPPAPI
+VOID
+NTAPI
+PhDeselectAllProcessNodes(
+    VOID
+    );
+
+PHAPPAPI
+VOID
+NTAPI
+PhExpandAllProcessNodes(
+    _In_ BOOLEAN Expand
+    );
+
+PHAPPAPI
+VOID
+NTAPI
+PhInvalidateAllProcessNodes(
+    VOID
+    );
+
+PHAPPAPI
+VOID
+NTAPI
+PhSelectAndEnsureVisibleProcessNode(
+    _In_ PPH_PROCESS_NODE ProcessNode
+    );
+
+PHAPPAPI
+PPH_LIST
+NTAPI
+PhDuplicateProcessNodeList(
+    VOID
+    );
+
+//
+// srvlist
+//
+
+typedef struct _PH_SERVICE_NODE
+{
+    PH_TREENEW_NODE Node;
+
+    PH_SH_STATE ShState;
+
+    PPH_SERVICE_ITEM ServiceItem;
+
+} PH_SERVICE_NODE, *PPH_SERVICE_NODE;
+
+PHAPPAPI
+struct _PH_TN_FILTER_SUPPORT *
+NTAPI
+PhGetFilterSupportServiceTreeList(
+    VOID
+    );
+
+PHAPPAPI
+PPH_SERVICE_NODE
+NTAPI
+PhFindServiceNode(
+    _In_ PPH_SERVICE_ITEM ServiceItem
+    );
+
+PHAPPAPI
+VOID
+NTAPI
+PhUpdateServiceNode(
+    _In_ PPH_SERVICE_NODE ServiceNode
+    );
+
+PHAPPAPI
+PPH_SERVICE_ITEM
+NTAPI
+PhGetSelectedServiceItem(
+    VOID
+    );
+
+PHAPPAPI
+VOID
+NTAPI
+PhGetSelectedServiceItems(
+    _Out_ PPH_SERVICE_ITEM **Services,
+    _Out_ PULONG NumberOfServices
+    );
+
+PHAPPAPI
+VOID
+NTAPI
+PhDeselectAllServiceNodes(
+    VOID
+    );
+
+PHAPPAPI
+VOID
+NTAPI
+PhSelectAndEnsureVisibleServiceNode(
+    _In_ PPH_SERVICE_NODE ServiceNode
+    );
+
+//
+// netlist
+//
+
+typedef struct _PH_NETWORK_NODE
+{
+    PH_TREENEW_NODE Node;
+
+    PH_SH_STATE ShState;
+
+    PPH_NETWORK_ITEM NetworkItem;
+
+} PH_NETWORK_NODE, *PPH_NETWORK_NODE;
+
+PHAPPAPI
+struct _PH_TN_FILTER_SUPPORT *
+NTAPI
+PhGetFilterSupportNetworkTreeList(
+    VOID
+    );
+
+PHAPPAPI
+PPH_NETWORK_NODE
+NTAPI
+PhFindNetworkNode(
+    _In_ PPH_NETWORK_ITEM NetworkItem
+    );
+
+//
+// thrdlist
+//
+
+typedef struct _PH_THREAD_NODE
+{
+    PH_TREENEW_NODE Node;
+
+    PH_SH_STATE ShState;
+
+    HANDLE ThreadId;
+    PPH_THREAD_ITEM ThreadItem;
+
+} PH_THREAD_NODE, *PPH_THREAD_NODE;
+
+//
+// modlist
+//
+
+typedef struct _PH_MODULE_NODE
+{
+    PH_TREENEW_NODE Node;
+
+    PH_SH_STATE ShState;
+
+    PPH_MODULE_ITEM ModuleItem;
+
+} PH_MODULE_NODE, *PPH_MODULE_NODE;
+
+//
+// hndllist
+//
+
+typedef struct _PH_HANDLE_NODE
+{
+    PH_TREENEW_NODE Node;
+
+    PH_SH_STATE ShState;
+
+    HANDLE Handle;
+    PPH_HANDLE_ITEM HandleItem;
+
+} PH_HANDLE_NODE, *PPH_HANDLE_NODE;
+
+//
+// memlist
+//
+
+typedef struct _PH_MEMORY_NODE
+{
+    PH_TREENEW_NODE Node;
+
+    BOOLEAN IsAllocationBase;
+    BOOLEAN Reserved1;
+    USHORT Reserved2;
+    PPH_MEMORY_ITEM MemoryItem;
+
+    struct _PH_MEMORY_NODE *Parent;
+    PPH_LIST Children;
+
+} PH_MEMORY_NODE, *PPH_MEMORY_NODE;
 
 //
 // extmgr
@@ -2124,63 +1839,98 @@ typedef enum _PH_SETTING_TYPE
 {
     StringSettingType,
     IntegerSettingType,
-    IntegerPairSettingType
+    IntegerPairSettingType,
+    ScalableIntegerPairSettingType
 } PH_SETTING_TYPE, PPH_SETTING_TYPE;
 
+_May_raise_
 PHAPPAPI
-_May_raise_ ULONG
+ULONG
 NTAPI
 PhGetIntegerSetting(
     _In_ PWSTR Name
     );
 
+_May_raise_
 PHAPPAPI
-_May_raise_ PH_INTEGER_PAIR
+PH_INTEGER_PAIR
 NTAPI
 PhGetIntegerPairSetting(
     _In_ PWSTR Name
     );
 
+_May_raise_
 PHAPPAPI
-_May_raise_ PPH_STRING
+PH_SCALABLE_INTEGER_PAIR
+NTAPI
+PhGetScalableIntegerPairSetting(
+    _In_ PWSTR Name,
+    _In_ BOOLEAN ScaleToCurrent
+    );
+
+_May_raise_
+PHAPPAPI
+PPH_STRING
 NTAPI
 PhGetStringSetting(
     _In_ PWSTR Name
     );
 
+_May_raise_
 PHAPPAPI
-_May_raise_ VOID
+VOID
 NTAPI
 PhSetIntegerSetting(
     _In_ PWSTR Name,
     _In_ ULONG Value
     );
 
+_May_raise_
 PHAPPAPI
-_May_raise_ VOID
+VOID
 NTAPI
 PhSetIntegerPairSetting(
     _In_ PWSTR Name,
     _In_ PH_INTEGER_PAIR Value
     );
 
+_May_raise_
 PHAPPAPI
-_May_raise_ VOID
+VOID
+NTAPI
+PhSetScalableIntegerPairSetting(
+    _In_ PWSTR Name,
+    _In_ PH_SCALABLE_INTEGER_PAIR Value
+    );
+
+_May_raise_
+PHAPPAPI
+VOID
+NTAPI
+PhSetScalableIntegerPairSetting2(
+    _In_ PWSTR Name,
+    _In_ PH_INTEGER_PAIR Value
+    );
+
+_May_raise_
+PHAPPAPI
+VOID
 NTAPI
 PhSetStringSetting(
     _In_ PWSTR Name,
     _In_ PWSTR Value
     );
 
+_May_raise_
 PHAPPAPI
-_May_raise_ VOID
+VOID
 NTAPI
 PhSetStringSetting2(
     _In_ PWSTR Name,
     _In_ PPH_STRINGREF Value
     );
 
-#define PhaGetStringSetting(Name) ((PPH_STRING)PhAutoDereferenceObject(PhGetStringSetting(Name))) // phapppub
+#define PhaGetStringSetting(Name) PH_AUTO_T(PH_STRING, PhGetStringSetting(Name)) // phapppub
 
 // High-level settings creation
 
@@ -2234,6 +1984,7 @@ typedef struct _PH_SYSINFO_PARAMETERS
     ULONG MinimumGraphHeight;
     ULONG SectionViewGraphHeight;
     ULONG PanelWidth;
+
 } PH_SYSINFO_PARAMETERS, *PPH_SYSINFO_PARAMETERS;
 
 typedef enum _PH_SYSINFO_SECTION_MESSAGE
@@ -2313,6 +2064,16 @@ PhSiSetColorsGraphDrawInfo(
     _In_ COLORREF Color2
     );
 
+PHAPPAPI
+PPH_STRING
+NTAPI
+PhSiSizeLabelYFunction(
+    _In_ PPH_GRAPH_DRAW_INFO DrawInfo,
+    _In_ ULONG DataIndex,
+    _In_ FLOAT Value,
+    _In_ FLOAT Parameter
+    );
+
 //
 // procgrp
 //
@@ -2321,6 +2082,7 @@ typedef struct _PH_PROCESS_GROUP
 {
     PPH_PROCESS_ITEM Representative; // An element of Processes (no extra reference added)
     PPH_LIST Processes; // List of PPH_PROCESS_ITEM
+    HWND WindowHandle; // Window handle of representative
 } PH_PROCESS_GROUP, *PPH_PROCESS_GROUP;
 
 //
@@ -3128,6 +2890,365 @@ PhPluginCallPhSvc(
     );
 
 //
+// actions
+//
+
+typedef enum _PH_PHSVC_MODE
+{
+    ElevatedPhSvcMode,
+    Wow64PhSvcMode
+} PH_PHSVC_MODE;
+            
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiConnectToPhSvc(
+    _In_opt_ HWND hWnd,
+    _In_ BOOLEAN ConnectOnly
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiConnectToPhSvcEx(
+    _In_opt_ HWND hWnd,
+    _In_ PH_PHSVC_MODE Mode,
+    _In_ BOOLEAN ConnectOnly
+    );
+
+PHAPPAPI
+VOID
+NTAPI
+PhUiDisconnectFromPhSvc(
+    VOID
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiLockComputer(
+    _In_ HWND hWnd
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiLogoffComputer(
+    _In_ HWND hWnd
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiSleepComputer(
+    _In_ HWND hWnd
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiHibernateComputer(
+    _In_ HWND hWnd
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiRestartComputer(
+    _In_ HWND hWnd,
+    _In_ ULONG Flags
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiShutdownComputer(
+    _In_ HWND hWnd,
+    _In_ ULONG Flags
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiConnectSession(
+    _In_ HWND hWnd,
+    _In_ ULONG SessionId
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiDisconnectSession(
+    _In_ HWND hWnd,
+    _In_ ULONG SessionId
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiLogoffSession(
+    _In_ HWND hWnd,
+    _In_ ULONG SessionId
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiTerminateProcesses(
+    _In_ HWND hWnd,
+    _In_ PPH_PROCESS_ITEM *Processes,
+    _In_ ULONG NumberOfProcesses
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiTerminateTreeProcess(
+    _In_ HWND hWnd,
+    _In_ PPH_PROCESS_ITEM Process
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiSuspendProcesses(
+    _In_ HWND hWnd,
+    _In_ PPH_PROCESS_ITEM *Processes,
+    _In_ ULONG NumberOfProcesses
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiResumeProcesses(
+    _In_ HWND hWnd,
+    _In_ PPH_PROCESS_ITEM *Processes,
+    _In_ ULONG NumberOfProcesses
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiRestartProcess(
+    _In_ HWND hWnd,
+    _In_ PPH_PROCESS_ITEM Process
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiDebugProcess(
+    _In_ HWND hWnd,
+    _In_ PPH_PROCESS_ITEM Process
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiReduceWorkingSetProcesses(
+    _In_ HWND hWnd,
+    _In_ PPH_PROCESS_ITEM *Processes,
+    _In_ ULONG NumberOfProcesses
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiSetVirtualizationProcess(
+    _In_ HWND hWnd,
+    _In_ PPH_PROCESS_ITEM Process,
+    _In_ BOOLEAN Enable
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiDetachFromDebuggerProcess(
+    _In_ HWND hWnd,
+    _In_ PPH_PROCESS_ITEM Process
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiInjectDllProcess(
+    _In_ HWND hWnd,
+    _In_ PPH_PROCESS_ITEM Process
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiSetIoPriorityProcesses(
+    _In_ HWND hWnd,
+    _In_ PPH_PROCESS_ITEM *Processes,
+    _In_ ULONG NumberOfProcesses,
+    _In_ IO_PRIORITY_HINT IoPriority
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiSetPagePriorityProcess(
+    _In_ HWND hWnd,
+    _In_ PPH_PROCESS_ITEM Process,
+    _In_ ULONG PagePriority
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiSetPriorityProcesses(
+    _In_ HWND hWnd,
+    _In_ PPH_PROCESS_ITEM *Processes,
+    _In_ ULONG NumberOfProcesses,
+    _In_ ULONG PriorityClass
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiStartService(
+    _In_ HWND hWnd,
+    _In_ PPH_SERVICE_ITEM Service
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiContinueService(
+    _In_ HWND hWnd,
+    _In_ PPH_SERVICE_ITEM Service
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiPauseService(
+    _In_ HWND hWnd,
+    _In_ PPH_SERVICE_ITEM Service
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiStopService(
+    _In_ HWND hWnd,
+    _In_ PPH_SERVICE_ITEM Service
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiDeleteService(
+    _In_ HWND hWnd,
+    _In_ PPH_SERVICE_ITEM Service
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiCloseConnections(
+    _In_ HWND hWnd,
+    _In_ PPH_NETWORK_ITEM *Connections,
+    _In_ ULONG NumberOfConnections
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiTerminateThreads(
+    _In_ HWND hWnd,
+    _In_ PPH_THREAD_ITEM *Threads,
+    _In_ ULONG NumberOfThreads
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiSuspendThreads(
+    _In_ HWND hWnd,
+    _In_ PPH_THREAD_ITEM *Threads,
+    _In_ ULONG NumberOfThreads
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiResumeThreads(
+    _In_ HWND hWnd,
+    _In_ PPH_THREAD_ITEM *Threads,
+    _In_ ULONG NumberOfThreads
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiSetPriorityThread(
+    _In_ HWND hWnd,
+    _In_ PPH_THREAD_ITEM Thread,
+    _In_ LONG Increment
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiSetIoPriorityThread(
+    _In_ HWND hWnd,
+    _In_ PPH_THREAD_ITEM Thread,
+    _In_ IO_PRIORITY_HINT IoPriority
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiSetPagePriorityThread(
+    _In_ HWND hWnd,
+    _In_ PPH_THREAD_ITEM Thread,
+    _In_ ULONG PagePriority
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiUnloadModule(
+    _In_ HWND hWnd,
+    _In_ HANDLE ProcessId,
+    _In_ PPH_MODULE_ITEM Module
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiFreeMemory(
+    _In_ HWND hWnd,
+    _In_ HANDLE ProcessId,
+    _In_ PPH_MEMORY_ITEM MemoryItem,
+    _In_ BOOLEAN Free
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiCloseHandles(
+    _In_ HWND hWnd,
+    _In_ HANDLE ProcessId,
+    _In_ PPH_HANDLE_ITEM *Handles,
+    _In_ ULONG NumberOfHandles,
+    _In_ BOOLEAN Warn
+    );
+
+PHAPPAPI
+BOOLEAN
+NTAPI
+PhUiSetAttributesHandle(
+    _In_ HWND hWnd,
+    _In_ HANDLE ProcessId,
+    _In_ PPH_HANDLE_ITEM Handle,
+    _In_ ULONG Attributes
+    );
+
+//
 // procprpp
 //
 
@@ -3190,7 +3311,7 @@ typedef struct _PH_MEMORY_CONTEXT
 // phsvccl
 //
 
-PHLIBAPI
+PHAPPAPI
 NTSTATUS PhSvcCallChangeServiceConfig(
     _In_ PWSTR ServiceName,
     _In_ ULONG ServiceType,
@@ -3205,14 +3326,14 @@ NTSTATUS PhSvcCallChangeServiceConfig(
     _In_opt_ PWSTR DisplayName
     );
 
-PHLIBAPI
+PHAPPAPI
 NTSTATUS PhSvcCallChangeServiceConfig2(
     _In_ PWSTR ServiceName,
     _In_ ULONG InfoLevel,
     _In_ PVOID Info
     );
 
-PHLIBAPI
+PHAPPAPI
 NTSTATUS PhSvcCallPostMessage(
     _In_opt_ HWND hWnd,
     _In_ UINT Msg,
@@ -3220,7 +3341,7 @@ NTSTATUS PhSvcCallPostMessage(
     _In_ LPARAM lParam
     );
 
-PHLIBAPI
+PHAPPAPI
 NTSTATUS PhSvcCallSendMessage(
     _In_opt_ HWND hWnd,
     _In_ UINT Msg,

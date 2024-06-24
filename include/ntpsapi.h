@@ -97,7 +97,7 @@ typedef struct _WOW64_PROCESS
 #if (PHNT_MODE != PHNT_MODE_KERNEL)
 typedef enum _PROCESSINFOCLASS
 {
-    ProcessBasicInformation, // 0, q: PROCESS_BASIC_INFORMATION, PROCESS_EXTENDED_BASIC_INFORMATION
+    ProcessBasicInformation, // q: PROCESS_BASIC_INFORMATION, PROCESS_EXTENDED_BASIC_INFORMATION
     ProcessQuotaLimits, // qs: QUOTA_LIMITS, QUOTA_LIMITS_EX
     ProcessIoCounters, // q: IO_COUNTERS
     ProcessVmCounters, // q: VM_COUNTERS, VM_COUNTERS_EX, VM_COUNTERS_EX2
@@ -107,7 +107,7 @@ typedef enum _PROCESSINFOCLASS
     ProcessDebugPort, // q: HANDLE
     ProcessExceptionPort, // s: HANDLE
     ProcessAccessToken, // s: PROCESS_ACCESS_TOKEN
-    ProcessLdtInformation, // 10, qs: PROCESS_LDT_INFORMATION
+    ProcessLdtInformation, // qs: PROCESS_LDT_INFORMATION // 10
     ProcessLdtSize, // s: PROCESS_LDT_SIZE
     ProcessDefaultHardErrorMode, // qs: ULONG
     ProcessIoPortHandlers, // (kernel-mode only)
@@ -117,7 +117,7 @@ typedef enum _PROCESSINFOCLASS
     ProcessEnableAlignmentFaultFixup, // s: BOOLEAN
     ProcessPriorityClass, // qs: PROCESS_PRIORITY_CLASS
     ProcessWx86Information,
-    ProcessHandleCount, // 20, q: ULONG, PROCESS_HANDLE_INFORMATION
+    ProcessHandleCount, // q: ULONG, PROCESS_HANDLE_INFORMATION // 20
     ProcessAffinityMask, // s: KAFFINITY
     ProcessPriorityBoost, // qs: ULONG
     ProcessDeviceMap, // qs: PROCESS_DEVICEMAP_INFORMATION, PROCESS_DEVICEMAP_INFORMATION_EX
@@ -127,10 +127,10 @@ typedef enum _PROCESSINFOCLASS
     ProcessImageFileName, // q: UNICODE_STRING
     ProcessLUIDDeviceMapsEnabled, // q: ULONG
     ProcessBreakOnTermination, // qs: ULONG
-    ProcessDebugObjectHandle, // 30, q: HANDLE
+    ProcessDebugObjectHandle, // q: HANDLE // 30
     ProcessDebugFlags, // qs: ULONG
     ProcessHandleTracing, // q: PROCESS_HANDLE_TRACING_QUERY; s: size 0 disables, otherwise enables
-    ProcessIoPriority, // qs: ULONG
+    ProcessIoPriority, // qs: IO_PRIORITY_HINT
     ProcessExecuteFlags, // qs: ULONG
     ProcessResourceManagement,
     ProcessCookie, // q: ULONG
@@ -147,7 +147,7 @@ typedef enum _PROCESSINFOCLASS
     ProcessGroupInformation, // q: USHORT[]
     ProcessTokenVirtualizationEnabled, // s: ULONG
     ProcessConsoleHostProcess, // q: ULONG_PTR
-    ProcessWindowInformation, // 50, q: PROCESS_WINDOW_INFORMATION
+    ProcessWindowInformation, // q: PROCESS_WINDOW_INFORMATION // 50
     ProcessHandleInformation, // q: PROCESS_HANDLE_SNAPSHOT_INFORMATION // since WIN8
     ProcessMitigationPolicy, // s: PROCESS_MITIGATION_POLICY_INFORMATION
     ProcessDynamicFunctionTableInformation,
@@ -157,7 +157,7 @@ typedef enum _PROCESSINFOCLASS
     ProcessWorkingSetControl, // s: PROCESS_WORKING_SET_CONTROL
     ProcessHandleTable, // since WINBLUE
     ProcessCheckStackExtentsMode,
-    ProcessCommandLineInformation, // 60, q: UNICODE_STRING
+    ProcessCommandLineInformation, // q: UNICODE_STRING // 60
     ProcessProtectionInformation, // q: PS_PROTECTION
     ProcessMemoryExhaustion, // PROCESS_MEMORY_EXHAUSTION_INFO // since THRESHOLD
     ProcessFaultInformation, // PROCESS_FAULT_INFORMATION
@@ -169,6 +169,8 @@ typedef enum _PROCESSINFOCLASS
     ProcessReserved2Information,
     ProcessSubsystemProcess, // 70
     ProcessJobMemoryInformation, // PROCESS_JOB_MEMORY_INFO
+    ProcessInPrivate, // since THRESHOLD2
+    ProcessRaiseUMExceptionOnInvalidHandleClose,
     MaxProcessInfoClass
 } PROCESSINFOCLASS;
 #endif
@@ -196,9 +198,9 @@ typedef enum _THREADINFOCLASS
     ThreadHideFromDebugger, // s: void
     ThreadBreakOnTermination, // qs: ULONG
     ThreadSwitchLegacyState,
-    ThreadIsTerminated, // 20, q: ULONG
+    ThreadIsTerminated, // q: ULONG // 20
     ThreadLastSystemCall, // q: THREAD_LAST_SYSCALL_INFORMATION
-    ThreadIoPriority, // qs: ULONG
+    ThreadIoPriority, // qs: IO_PRIORITY_HINT
     ThreadCycleTime, // q: THREAD_CYCLE_TIME_INFORMATION
     ThreadPagePriority, // q: ULONG
     ThreadActualBasePriority,
@@ -206,18 +208,18 @@ typedef enum _THREADINFOCLASS
     ThreadCSwitchMon,
     ThreadCSwitchPmu,
     ThreadWow64Context, // q: WOW64_CONTEXT
-    ThreadGroupInformation, // 30, q: GROUP_AFFINITY
+    ThreadGroupInformation, // q: GROUP_AFFINITY // 30
     ThreadUmsInformation,
     ThreadCounterProfiling,
     ThreadIdealProcessorEx, // q: PROCESSOR_NUMBER
     ThreadCpuAccountingInformation, // since WIN8
     ThreadSuspendCount, // since WINBLUE
-    ThreadHeterogeneousCpuPolicy, // KHETERO_CPU_POLICY // since THRESHOLD
-    ThreadContainerId,
+    ThreadHeterogeneousCpuPolicy, // q: KHETERO_CPU_POLICY // since THRESHOLD
+    ThreadContainerId, // q: GUID
     ThreadNameInformation,
-    ThreadProperty,
     ThreadSelectedCpuSets,
-    ThreadSystemThreadInformation,
+    ThreadSystemThreadInformation, // q: SYSTEM_THREAD_INFORMATION // 40
+    ThreadActualGroupAffinity, // since THRESHOLD2
     MaxThreadInfoClass
 } THREADINFOCLASS;
 #endif
@@ -540,20 +542,6 @@ typedef struct _PROCESS_HANDLE_SNAPSHOT_INFORMATION
 #if (PHNT_MODE != PHNT_MODE_KERNEL)
 
 // private
-typedef struct _PROCESS_MITIGATION_CONTROL_FLOW_GUARD_POLICY
-{
-    union
-    {
-        ULONG Flags;
-        struct
-        {
-            ULONG EnableControlFlowGuard : 1;
-            ULONG ReservedFlags : 31;
-        };
-    };
-} PROCESS_MITIGATION_CONTROL_FLOW_GUARD_POLICY, *PPROCESS_MITIGATION_CONTROL_FLOW_GUARD_POLICY;
-
-// private
 typedef struct _PROCESS_MITIGATION_POLICY_INFORMATION
 {
     PROCESS_MITIGATION_POLICY Policy;
@@ -566,6 +554,8 @@ typedef struct _PROCESS_MITIGATION_POLICY_INFORMATION
         PROCESS_MITIGATION_DYNAMIC_CODE_POLICY DynamicCodePolicy;
         PROCESS_MITIGATION_CONTROL_FLOW_GUARD_POLICY ControlFlowGuardPolicy;
         PROCESS_MITIGATION_BINARY_SIGNATURE_POLICY SignaturePolicy;
+        PROCESS_MITIGATION_FONT_DISABLE_POLICY FontDisablePolicy;
+        PROCESS_MITIGATION_IMAGE_LOAD_POLICY ImageLoadPolicy;
     };
 } PROCESS_MITIGATION_POLICY_INFORMATION, *PPROCESS_MITIGATION_POLICY_INFORMATION;
 
@@ -629,20 +619,6 @@ typedef struct _PS_PROTECTION
         };
     };
 } PS_PROTECTION, *PPS_PROTECTION;
-
-typedef enum _PROCESS_MEMORY_EXHAUSTION_TYPE
-{
-    PMETypeFailFastOnCommitFailure,
-    PMETypeMax
-} PROCESS_MEMORY_EXHAUSTION_TYPE;
-
-typedef struct _PROCESS_MEMORY_EXHAUSTION_INFO
-{
-    USHORT Version;
-    USHORT Reserved;
-    PROCESS_MEMORY_EXHAUSTION_TYPE Type;
-    SIZE_T Value;
-} PROCESS_MEMORY_EXHAUSTION_INFO, *PPROCESS_MEMORY_EXHAUSTION_INFO;
 
 typedef struct _PROCESS_FAULT_INFORMATION
 {
@@ -1079,6 +1055,27 @@ NtQueueApcThreadEx(
     );
 #endif
 
+#if (PHNT_VERSION >= PHNT_WIN8)
+
+// rev
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtAlertThreadByThreadId(
+    _In_ HANDLE ThreadId
+    );
+
+// rev
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtWaitForAlertByThreadId(
+    _In_ PVOID Address,
+    _In_opt_ PLARGE_INTEGER Timeout
+    );
+
+#endif
+
 #endif
 
 // User processes and threads
@@ -1117,6 +1114,7 @@ typedef enum _PS_ATTRIBUTE_NUM
     PsAttributeProtectionLevel,
     PsAttributeSecureProcess, // since THRESHOLD
     PsAttributeJobList,
+    PsAttributeChildProcessPolicy, // since THRESHOLD2
     PsAttributeMax
 } PS_ATTRIBUTE_NUM;
 
@@ -1472,144 +1470,6 @@ NtAllocateReserveObject(
     _In_ POBJECT_ATTRIBUTES ObjectAttributes,
     _In_ MEMORY_RESERVE_TYPE Type
     );
-#endif
-
-#endif
-
-// Silo objects
-
-#if (PHNT_MODE != PHNT_MODE_KERNEL)
-
-// begin_private
-
-typedef enum _SERVERSILO_STATE
-{
-    SERVERSILO_INITING,
-    SERVERSILO_STARTED,
-    SERVERSILO_TERMINATING,
-    SERVERSILO_TERMINATED
-} SERVERSILO_STATE;
-
-typedef enum _SILOOBJECTINFOCLASS
-{
-    SiloObjectBasicInformation, // SILOOBJECT_BASIC_INFORMATION
-    SiloObjectBasicProcessIdList,
-    SiloObjectChildSiloIdList,
-    SiloObjectRootDirectory, // SILOOBJECT_ROOT_DIRECTORY
-    ServerSiloBasicInformation, // SERVERSILO_BASIC_INFORMATION
-    ServerSiloServiceSessionId,
-    ServerSiloInitialize,
-    ServerSiloDefaultCompartmentId,
-    MaxSiloObjectInfoClass
-} SILOOBJECTINFOCLASS;
-
-typedef struct _SILOOBJECT_BASIC_INFORMATION
-{
-    HANDLE SiloIdNumber;
-    HANDLE SiloParentIdNumber;
-    ULONG NumberOfProcesses;
-    ULONG NumberOfChildSilos;
-    BOOLEAN IsInServerSilo;
-} SILOOBJECT_BASIC_INFORMATION, *PSILOOBJECT_BASIC_INFORMATION;
-
-typedef struct _SILOOBJECT_ROOT_DIRECTORY
-{
-    HANDLE DirectoryHandle;
-} SILOOBJECT_ROOT_DIRECTORY, *PSILOOBJECT_ROOT_DIRECTORY;
-
-typedef struct _SERVERSILO_BASIC_INFORMATION
-{
-    HANDLE SiloIdNumber;
-    ULONG ServiceSessionId;
-    ULONG DefaultCompartmentId;
-    SERVERSILO_STATE State;
-} SERVERSILO_BASIC_INFORMATION, *PSERVERSILO_BASIC_INFORMATION;
-
-// end_private
-
-#if (PHNT_VERSION >= PHNT_THRESHOLD)
-
-NTSYSCALLAPI
-NTSTATUS
-NTAPI
-NtCreateSiloObject(
-    _Out_ PHANDLE SiloHandle,
-    _In_ ACCESS_MASK DesiredAccess,
-    _In_opt_ POBJECT_ATTRIBUTES ObjectAttributes
-    );
-
-NTSYSCALLAPI
-NTSTATUS
-NTAPI
-NtOpenSiloObject(
-    _Out_ PHANDLE SiloHandle,
-    _In_ ACCESS_MASK DesiredAccess,
-    _In_ POBJECT_ATTRIBUTES ObjectAttributes,
-    _In_opt_ HANDLE SiloId
-    );
-
-NTSYSCALLAPI
-NTSTATUS
-NTAPI
-NtAssignProcessToSiloObject(
-    _In_ HANDLE SiloHandle,
-    _In_ HANDLE ProcessHandle
-    );
-
-NTSYSCALLAPI
-NTSTATUS
-NTAPI
-NtTerminateSiloObject(
-    _In_ HANDLE SiloHandle,
-    _In_ NTSTATUS ExitStatus
-    );
-
-NTSYSCALLAPI
-NTSTATUS
-NTAPI
-NtQueryInformationSiloObject(
-    _In_opt_ HANDLE SiloHandle,
-    _In_ SILOOBJECTINFOCLASS SiloObjectInformationClass,
-    _Out_writes_bytes_(SiloObjectInformationLength) PVOID SiloObjectInformation,
-    _In_ ULONG SiloObjectInformationLength,
-    _Out_opt_ PULONG ReturnLength
-    );
-
-NTSYSCALLAPI
-NTSTATUS
-NTAPI
-NtSetInformationSiloObject(
-    _In_opt_ HANDLE SiloHandle,
-    _In_ SILOOBJECTINFOCLASS SiloObjectInformationClass,
-    _In_reads_bytes_(SiloObjectInformationLength) PVOID SiloObjectInformation,
-    _In_ ULONG SiloObjectInformationLength
-    );
-
-NTSYSCALLAPI
-NTSTATUS
-NTAPI
-NtAttachThreadSiloToCurrentThread(
-    _In_ HANDLE ThreadHandle,
-    _Out_ PHANDLE PreviousSiloHandle,
-    _Out_opt_ PBOOLEAN bChangedSilo
-    );
-
-NTSYSCALLAPI
-NTSTATUS
-NTAPI
-NtAttachThreadIdSiloToCurrentThread(
-    _In_  HANDLE ThreadId,
-    _Out_ PHANDLE PreviousSiloHandle,
-    _Out_opt_ PBOOLEAN bChangedSilo
-    );
-
-NTSYSCALLAPI
-NTSTATUS
-NTAPI
-NtDetachSiloFromCurrentThread(
-    _In_ HANDLE SiloHandle
-    );
-
 #endif
 
 #endif
