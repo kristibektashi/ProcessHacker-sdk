@@ -1,5 +1,8 @@
 # ProcessHacker-SDK
- This is version 2.36 of the SDK used for creating Process Hacker plugins, taken from SourceForge: 
+ This is version 2.36 of the SDK used for creating Process Hacker plugins, ported to the ARM32 architecture
+ (taken from https://github.com/bfosterjr/windowsrtdev/tree/master/apps/ProcessHacker/2.36/src)
+ 
+ The original version can be found on SourceForge: 
  https://sourceforge.net/projects/processhacker/files/processhacker2/.
 
  Original readme.txt shown below: 
